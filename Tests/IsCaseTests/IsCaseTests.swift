@@ -5,8 +5,8 @@ import SwiftSyntaxMacrosTestSupport
 import XCTest
 
 /// Macro implementations build for the host, so the corresponding module is not available when cross-compiling. Cross-compiled tests may still make use of the macro itself in end-to-end tests.
-#if canImport(QizhMakroKitMacros)
-import QizhMacroKitMacros
+#if canImport(IsCaseMacros)
+import IsCaseMacros
 
 let testMacros: [String: Macro.Type] = [
 	"IsCase": IsCasesGenerator.self,
@@ -17,7 +17,7 @@ final class QizhMacroKitTests: XCTestCase {
 
 	/// Test that the generated properties return correct values
 	func testIsCaseProperties() throws {
-		#if canImport(QizhMacroKitMacros)
+		#if canImport(IsCaseMacros)
 		@IsCase
 		enum TestEnum {
 			case first

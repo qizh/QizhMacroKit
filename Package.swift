@@ -5,7 +5,7 @@ import CompilerPluginSupport
 
 let package = Package(
 	name: "QizhMacroKit",
-	platforms: [.macOS(.v13), .iOS(.v16), .tvOS(.v13), .watchOS(.v8), .macCatalyst(.v13)],
+	platforms: [.macOS(.v13), .iOS(.v16), .watchOS(.v8), .macCatalyst(.v13)],
 	products: [
 		.library(
 			name: "QizhMacroKit",
@@ -20,7 +20,7 @@ let package = Package(
 		.package(url: "https://github.com/swiftlang/swift-syntax.git", from: "600.0.0-latest"),
 	],
 	targets: [
-		// Macro plugin target
+		/// Macro plugin target
 		.macro(
 			name: "QizhMacroKitMacros",
 			dependencies: [
@@ -30,11 +30,11 @@ let package = Package(
 				.product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
 			]
 		),
-		// Library target that exposes the macro
+		/// Library target that exposes the macro
 		.target(name: "QizhMacroKit", dependencies: ["QizhMacroKitMacros"]),
-		// Client executable target that uses the macro
+		/// Client executable target that uses the macro
 		.executableTarget(name: "QizhMacroKitClient", dependencies: ["QizhMacroKit"]),
-		// Test target
+		/// Test target
 		.testTarget(
 			name: "QizhMacroKitTests",
 			dependencies: [
