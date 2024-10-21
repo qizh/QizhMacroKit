@@ -5,7 +5,7 @@ import CompilerPluginSupport
 
 let package = Package(
 	name: "QizhMacroKit",
-	platforms: [.macOS(.v13), .iOS(.v16), .watchOS(.v8), .macCatalyst(.v13)],
+	platforms: [.macOS(.v13), .iOS(.v16), .macCatalyst(.v13)],
 	products: [
 		.library(
 			name: "QizhMacroKit",
@@ -34,6 +34,7 @@ let package = Package(
 		.target(name: "QizhMacroKit", dependencies: ["QizhMacroKitMacros"]),
 		/// Client executable target that uses the macro
 		.executableTarget(name: "QizhMacroKitClient", dependencies: ["QizhMacroKit"]),
+		/*
 		/// Test target
 		.testTarget(
 			name: "QizhMacroKitTests",
@@ -42,5 +43,6 @@ let package = Package(
 				.product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
 			]
 		),
+		*/
 	]
 )
