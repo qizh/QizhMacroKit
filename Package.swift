@@ -5,7 +5,11 @@ import CompilerPluginSupport
 
 let package = Package(
 	name: "QizhMacroKit",
-	platforms: [.macOS(.v13), .iOS(.v16), .macCatalyst(.v13)],
+	platforms: [
+		.iOS(.v16),
+		.macOS(.v13),
+		.macCatalyst(.v13)
+	],
 	products: [
 		.library(
 			name: "QizhMacroKit",
@@ -31,9 +35,21 @@ let package = Package(
 			]
 		),
 		/// Library target that exposes the macro
-		.target(name: "QizhMacroKit", dependencies: ["QizhMacroKitMacros"]),
+		.target(
+			name: "QizhMacroKit",
+			dependencies: ["QizhMacroKitMacros"],
+			resources: [
+				.process("PrivacyInfo.xcprivacy")
+			]
+		),
 		/// Client executable target that uses the macro
-		.executableTarget(name: "QizhMacroKitClient", dependencies: ["QizhMacroKit"]),
+		.executableTarget(
+			name: "QizhMacroKitClient",
+			dependencies: ["QizhMacroKit"],
+			resources: [
+				.process("PrivacyInfo.xcprivacy")
+			]
+		),
 		/*
 		/// Test target
 		.testTarget(
