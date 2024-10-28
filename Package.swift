@@ -12,13 +12,8 @@ let package = Package(
 	],
 	products: [
 		.library(
-			name: "QizhMacroKitStatic",
+			name: "QizhMacroKit",
 			type: .static,
-			targets: ["QizhMacroKit"]
-		),
-		.library(
-			name: "QizhMacroKitDynamic",
-			type: .dynamic,
 			targets: ["QizhMacroKit"]
 		),
 		.executable(
@@ -44,6 +39,9 @@ let package = Package(
 		.target(
 			name: "QizhMacroKit",
 			dependencies: [],
+			resources: [
+				.process("PrivacyInfo.xcprivacy")
+			],
 			plugins: [
 				.plugin(name: "QizhMacroKitMacros")
 			]
@@ -51,12 +49,10 @@ let package = Package(
 		/// Client executable target that uses the macro
 		.executableTarget(
 			name: "QizhMacroKitClient",
-			dependencies: ["QizhMacroKit"]
-			/*
+			dependencies: ["QizhMacroKit"],
 			resources: [
 				.process("PrivacyInfo.xcprivacy")
 			]
-			*/
 		),
 		/*
 		/// Test target
