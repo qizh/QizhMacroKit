@@ -13,6 +13,7 @@ let package = Package(
 	products: [
 		.library(
 			name: "QizhMacroKit",
+			type: .static,
 			targets: ["QizhMacroKit"]
 		),
 		.executable(
@@ -37,12 +38,10 @@ let package = Package(
 		/// Library target that exposes the macro
 		.target(
 			name: "QizhMacroKit",
-			dependencies: ["QizhMacroKitMacros"]
-			/*
-			resources: [
-				.process("PrivacyInfo.xcprivacy")
+			dependencies: [],
+			plugins: [
+				.plugin(name: "QizhMacroKitMacros")
 			]
-			*/
 		),
 		/// Client executable target that uses the macro
 		.executableTarget(
