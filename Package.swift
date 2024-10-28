@@ -1,4 +1,4 @@
-// swift-tools-version:5.10
+// swift-tools-version:6.0
 
 import PackageDescription
 import CompilerPluginSupport
@@ -8,7 +8,7 @@ let package = Package(
 	platforms: [
 		.iOS(.v16),
 		.macOS(.v13),
-		.macCatalyst(.v13)
+		.macCatalyst(.v13),
 	],
 	products: [
 		.library(
@@ -21,7 +21,7 @@ let package = Package(
 		),
 	],
 	dependencies: [
-		.package(url: "https://github.com/swiftlang/swift-syntax.git", from: "510.0.0"),
+		.package(url: "https://github.com/swiftlang/swift-syntax.git", from: "600.0.0"),
 	],
 	targets: [
 		/// Macro plugin target
@@ -37,18 +37,22 @@ let package = Package(
 		/// Library target that exposes the macro
 		.target(
 			name: "QizhMacroKit",
-			dependencies: ["QizhMacroKitMacros"],
+			dependencies: ["QizhMacroKitMacros"]
+			/*
 			resources: [
 				.process("PrivacyInfo.xcprivacy")
 			]
+			*/
 		),
 		/// Client executable target that uses the macro
 		.executableTarget(
 			name: "QizhMacroKitClient",
-			dependencies: ["QizhMacroKit"],
+			dependencies: ["QizhMacroKit"]
+			/*
 			resources: [
 				.process("PrivacyInfo.xcprivacy")
 			]
+			*/
 		),
 		/*
 		/// Test target
