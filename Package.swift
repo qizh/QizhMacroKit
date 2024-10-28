@@ -12,8 +12,13 @@ let package = Package(
 	],
 	products: [
 		.library(
-			name: "QizhMacroKit",
+			name: "QizhMacroKitStatic",
 			type: .static,
+			targets: ["QizhMacroKit"]
+		),
+		.library(
+			name: "QizhMacroKitDynamic",
+			type: .dynamic,
 			targets: ["QizhMacroKit"]
 		),
 		.executable(
