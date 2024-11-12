@@ -35,10 +35,6 @@ let package = Package(
 				.product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
 				.product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
 				.product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
-			],
-			swiftSettings: [
-				.unsafeFlags(["-Onone"], .when(configuration: .debug)),
-				.unsafeFlags(["-Owholemodule"], .when(configuration: .release))
 			]
 		),
 		
@@ -49,10 +45,6 @@ let package = Package(
 			dependencies: [],
 			resources: [
 				.process("PrivacyInfo.xcprivacy")
-			],
-			swiftSettings: [
-				.unsafeFlags(["-Onone"], .when(configuration: .debug)),
-				.unsafeFlags(["-Owholemodule"], .when(configuration: .release))
 			],
 			plugins: [
 				.plugin(name: "QizhMacroKitMacros")
@@ -66,10 +58,6 @@ let package = Package(
 			dependencies: ["QizhMacroKit"],
 			resources: [
 				.process("PrivacyInfo.xcprivacy")
-			],
-			swiftSettings: [
-				.unsafeFlags(["-Onone"], .when(configuration: .debug)),
-				.unsafeFlags(["-Owholemodule"], .when(configuration: .release))
 			]
 		),
 		
