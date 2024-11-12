@@ -25,7 +25,9 @@ let package = Package(
 		.package(url: "https://github.com/swiftlang/swift-syntax.git", "600.0.0" ..< "610.0.0"),
 	],
 	targets: [
+		
 		/// Macro plugin target
+		
 		.macro(
 			name: "QizhMacroKitMacros",
 			dependencies: [
@@ -33,29 +35,47 @@ let package = Package(
 				.product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
 				.product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
 				.product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
+			],
+			swiftSettings: [
+				.unsafeFlags(["-Onone"], .when(configuration: .debug)),
+				.unsafeFlags(["-Owholemodule"], .when(configuration: .release))
 			]
 		),
+		
 		/// Library target that exposes the macro
+		
 		.target(
 			name: "QizhMacroKit",
 			dependencies: [],
 			resources: [
 				.process("PrivacyInfo.xcprivacy")
 			],
+			swiftSettings: [
+				.unsafeFlags(["-Onone"], .when(configuration: .debug)),
+				.unsafeFlags(["-Owholemodule"], .when(configuration: .release))
+			],
 			plugins: [
 				.plugin(name: "QizhMacroKitMacros")
 			]
 		),
+		
 		/// Client executable target that uses the macro
+		
 		.executableTarget(
 			name: "QizhMacroKitClient",
 			dependencies: ["QizhMacroKit"],
 			resources: [
 				.process("PrivacyInfo.xcprivacy")
+			],
+			swiftSettings: [
+				.unsafeFlags(["-Onone"], .when(configuration: .debug)),
+				.unsafeFlags(["-Owholemodule"], .when(configuration: .release))
 			]
 		),
-		/*
+		
 		/// Test target
+		
+		/*
 		.testTarget(
 			name: "QizhMacroKitTests",
 			dependencies: [
