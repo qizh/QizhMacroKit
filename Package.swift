@@ -73,5 +73,6 @@ let package = Package(
 			]
 		),
 		*/
-	]
+	],
+	swiftLanguageModes: [.v6]
 )
