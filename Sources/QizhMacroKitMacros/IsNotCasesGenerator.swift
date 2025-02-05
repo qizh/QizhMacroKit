@@ -1,11 +1,11 @@
 //
-//  IsCasesGenerator.swift
+//  IsNotCasesGenerator.swift
 //  QizhMacroKit
 //
-//  Created by Serhii Shevchenko on 08.10.2024.
+//  Created by Serhii Shevchenko on 06.02.2025.
 //
 
-public struct IsCasesGenerator: MemberMacro {
+public struct IsNotCasesGenerator: MemberMacro {
 	public static func expansion(
 		of node: AttributeSyntax,
 		providingMembersOf declaration: some DeclGroupSyntax,
@@ -16,7 +16,7 @@ public struct IsCasesGenerator: MemberMacro {
 		guard let enumDecl = declaration.as(EnumDeclSyntax.self) else {
 			let error = Diagnostic(
 				node: Syntax(node),
-				message: QizhMacroGeneratorDiagnostic("@IsCase can only be applied to enums")
+				message: QizhMacroGeneratorDiagnostic("@IsNotCase can only be applied to enums")
 			)
 			context.diagnose(error)
 			return []
@@ -38,13 +38,13 @@ public struct IsCasesGenerator: MemberMacro {
 			
 			for element in enumCaseDecl.elements {
 				let caseName = element.name.text
-				let propertyName = "is\(caseName.prefix(1).uppercased())\(caseName.dropFirst())"
+				let propertyName = "isNot\(caseName.prefix(1).uppercased())\(caseName.dropFirst())"
 				
 				let property: DeclSyntax = """
 				\(raw: modifiersString)var \(raw: propertyName): Bool {
 					switch self {
-					case .\(raw: caseName): true
-					default: false
+					case .\(raw: caseName): false
+					default: true
 					}
 				}
 				"""

@@ -1,3 +1,10 @@
+//
+//  CaseNameGenerator.swift
+//  QizhMacroKit
+//
+//  Created by Serhii Shevchenko on 08.10.2024.
+//
+
 public struct CaseNameGenerator: MemberMacro {
 	public static func expansion(
 		of node: AttributeSyntax,
@@ -25,16 +32,18 @@ public struct CaseNameGenerator: MemberMacro {
 			return []
 		}
 		
-		let modifiers = enumDecl.modifiers.map(\.name.text).joined(separator: " ")
+		let modifiers = enumDecl.modifiers
+			.map(\.name.text)
+		
+		let modifiersString: String = modifiers.isEmpty ? "" : modifiers.joined(separator: " ") + " "
 		
 		var result: [DeclSyntax] = ["""
-			\(raw: modifiers) var caseName: String {
+			\(raw: modifiersString)var caseName: String {
 				switch self {
 			"""]
 		
 		for member in members {
 			guard let enumCaseDecl = member.decl.as(EnumCaseDeclSyntax.self) else {
-				result.append("")
 				continue
 			}
 			

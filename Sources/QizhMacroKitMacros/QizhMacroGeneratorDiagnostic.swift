@@ -14,7 +14,7 @@ public struct QizhMacroGeneratorDiagnostic: DiagnosticMessage {
 
 	public init(_ message: String, severity: DiagnosticSeverity = .error) {
 		self.message = message
-		self.diagnosticID = MessageID(domain: "IsCaseMacros", id: "InvalidUsage")
+		self.diagnosticID = MessageID(domain: "QizhKitMacros", id: "InvalidUsage")
 		self.severity = severity
 	}
 }

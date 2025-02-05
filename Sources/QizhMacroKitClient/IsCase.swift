@@ -1,5 +1,5 @@
 //
-//  InCase.swift
+//  IsCase.swift
 //  QizhMacroKit
 //
 //  Created by Serhii Shevchenko on 08.10.2024.
