@@ -6,6 +6,7 @@
 //
 
 public struct CaseNameGenerator: MemberMacro {
+	// TODO: Add snakeCase: Bool = false parameter
 	public static func expansion(
 		of node: AttributeSyntax,
 		providingMembersOf declaration: some DeclGroupSyntax,
