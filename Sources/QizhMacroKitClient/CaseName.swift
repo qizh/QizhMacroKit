@@ -16,3 +16,12 @@ fileprivate enum Status {
 	case failure(error: Error)
 	case inSuperLongProgress(_ loaded: Double, of: Double)
 }
+
+@CaseName(snakeCase: true)
+fileprivate enum Status2 {
+	case idleState
+	case loadingNow
+	case success(data: Data)
+	case failure(error: Error)
+	case inSuperLongProgress(_ loaded: Double, of: Double)
+}

@@ -6,4 +6,4 @@
 //
 
 @attached(member, names: arbitrary)
-public macro CaseName() = #externalMacro(module: "QizhMacroKitMacros", type: "CaseNameGenerator")
+public macro CaseName(snakeCase: Bool = false) = #externalMacro(module: "QizhMacroKitMacros", type: "CaseNameGenerator")
