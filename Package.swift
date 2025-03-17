@@ -22,8 +22,8 @@ let package = Package(
 		),
 	],
 	dependencies: [
-		.package(url: "https://github.com/swiftlang/swift-syntax.git", exact: "600.0.0"),
-		// .package(url: "https://github.com/swiftlang/swift-syntax.git", "600.0.0" ..< "610.0.0"),
+		// .package(url: "https://github.com/swiftlang/swift-syntax.git", exact: "600.0.0"),
+		.package(url: "https://github.com/swiftlang/swift-syntax.git", "600.0.0" ..< "610.0.0"),
 	],
 	targets: [
 		
@@ -74,5 +74,8 @@ let package = Package(
 		),
 		*/
 	],
-	swiftLanguageModes: [.v5, .v6]
+	swiftLanguageModes: [
+		// .v5,
+		.v6,
+	]
 )
