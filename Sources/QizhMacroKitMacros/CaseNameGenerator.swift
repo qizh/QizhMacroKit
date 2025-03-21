@@ -12,7 +12,7 @@ public struct CaseNameGenerator: MemberMacro {
 		in context: some MacroExpansionContext
 	) throws -> [DeclSyntax] {
 		
-		// Ensure the declaration is an enum
+		/// Ensure the declaration is an enum
 		guard let enumDecl = declaration.as(EnumDeclSyntax.self) else {
 			let error = Diagnostic(
 				node: Syntax(node),
@@ -32,7 +32,7 @@ public struct CaseNameGenerator: MemberMacro {
 			return []
 		}
 		
-		// Parse the attribute argument for snakeCase (default is false)
+		/// Parse the attribute argument for snakeCase (default is false)
 		var snakeCase = false
 		if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
 			for element in argumentList {
@@ -48,7 +48,7 @@ public struct CaseNameGenerator: MemberMacro {
 							context.diagnose(error)
 						}
 					} else {
-						// Unexpected parameter label found
+						/// Unexpected parameter label found
 						let error = Diagnostic(
 							node: Syntax(element),
 							message: QizhMacroGeneratorDiagnostic("Unexpected parameter: '\(label.text)'")
@@ -56,7 +56,7 @@ public struct CaseNameGenerator: MemberMacro {
 						context.diagnose(error)
 					}
 				} else {
-					// No label provided: also an error in this context
+					/// No label provided: also an error in this context
 					let error = Diagnostic(
 						node: Syntax(element),
 						message: QizhMacroGeneratorDiagnostic("Expected a label for the parameter")
@@ -66,27 +66,12 @@ public struct CaseNameGenerator: MemberMacro {
 			}
 		}
 		
-		// Helper function to convert CamelCase to snake_case
-		func toSnakeCase(_ input: String) -> String {
-			var result = ""
-			for char in input {
-				if char.isUppercase {
-					if !result.isEmpty { result.append("_") }
-					result.append(char.lowercased())
-				} else {
-					result.append(char)
-				}
-			}
-			return result
-		}
-		
 		let modifiers = enumDecl.modifiers.map(\.name.text)
-		let modifiersString: String = modifiers.isEmpty ? "" : modifiers.joined(separator: " ") + " "
+		let modifiersString: String = modifiers.isEmpty 
+			? ""
+			: modifiers.joined(separator: " ") + " "
 		
-		var result: [DeclSyntax] = ["""
-			\(raw: modifiersString)var caseName: String {
-				switch self {
-			"""]
+		var resultString: String = "\(modifiersString)var caseName: String { switch self {"
 		
 		for member in members {
 			guard let enumCaseDecl = member.decl.as(EnumCaseDeclSyntax.self) else {
@@ -96,17 +81,27 @@ public struct CaseNameGenerator: MemberMacro {
 			for element in enumCaseDecl.elements {
 				let caseName = element.name.text
 				let computedName = snakeCase ? toSnakeCase(caseName) : caseName
-				result.append("""
-					case .\(raw: caseName): "\(raw: computedName)"
-				""")
+				resultString += "\ncase .\(caseName): \"\(computedName)\""
 			}
 		}
 		
-		result.append("""
-				}
-			}
-		""")
+		resultString += "}}"
 		
+		return ["\(raw: resultString)"]
+	}
+	
+	/// Helper function to convert `any_or_camelCase` to `snake_case`
+	fileprivate static func toSnakeCase(_ input: String) -> String {
+		var result = ""
+		for char in input {
+			if char.isUppercase {
+				if !result.isEmpty { result.append("_") }
+				result.append(char.lowercased())
+			} else {
+				result.append(char)
+			}
+		}
 		return result
 	}
+
 }

@@ -13,7 +13,7 @@ fileprivate enum Status {
 	case idle
 	case loading
 	case success(data: Data)
-	case failure(error: Error)
+	case failure(_ error: Error)
 	case inSuperLongProgress(_ loaded: Double, of: Double)
 }
 
@@ -22,6 +22,6 @@ fileprivate enum Status2 {
 	case idleState
 	case loadingNow
 	case success(data: Data)
-	case failure(error: Error)
+	case failure(_ error: Error)
 	case inSuperLongProgress(_ loaded: Double, of: Double)
 }
