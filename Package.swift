@@ -23,7 +23,7 @@ let package = Package(
 	],
 	dependencies: [
 		// .package(url: "https://github.com/swiftlang/swift-syntax.git", exact: "600.0.0"),
-		.package(url: "https://github.com/swiftlang/swift-syntax.git", "600.0.0" ..< "610.0.0"),
+		.package(url: "https://github.com/swiftlang/swift-syntax.git", "600.0.0" ..< "700.0.0"),
 	],
 	targets: [
 		
