@@ -6,9 +6,9 @@ import CompilerPluginSupport
 let package = Package(
 	name: "QizhMacroKit",
 	platforms: [
-		.iOS(.v16),
-		.macOS(.v13),
-		.macCatalyst(.v13),
+		.iOS(.v17),
+		.macOS(.v14),
+		.macCatalyst(.v14),
 	],
 	products: [
 		.library(
