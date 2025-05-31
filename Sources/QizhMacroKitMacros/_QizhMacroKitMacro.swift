@@ -10,5 +10,6 @@ struct QizhMacroKitPlugin: CompilerPlugin {
 		IsCasesGenerator.self,
 		IsNotCasesGenerator.self,
 		CaseNameGenerator.self,
+		CaseValueGenerator.self,
 	]
 }
