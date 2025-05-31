@@ -14,25 +14,15 @@ public struct CaseValueGenerator: MemberMacro {
 	) throws -> [DeclSyntax] {
 		/// Ensure the declaration is an enum
 		guard let enumDecl = declaration.as(EnumDeclSyntax.self) else {
-			let error = Diagnostic(
-				node: Syntax(node),
-				message: QizhMacroGeneratorDiagnostic("@CaseValue can only be applied to enums")
+			context.diagnose(
+				.error(
+					node: Syntax(node),
+					message: "@CaseValue can only be applied to enums",
+					id: "InvalidDeclarationApplication"
+				)
 			)
-			context.diagnose(error)
 			return []
 		}
-		
-		/*
-		let members = enumDecl.memberBlock.members
-		guard members.count > 0 else {
-			let error = Diagnostic(
-				node: Syntax(node),
-				message: QizhMacroGeneratorDiagnostic("@CaseValue can only be applied to enums with cases")
-			)
-			context.diagnose(error)
-			return []
-		}
-		*/
 		
 		let members = enumDecl.memberBlock.members
 		var computedProperties: [DeclSyntax] = []
@@ -65,35 +55,36 @@ public struct CaseValueGenerator: MemberMacro {
 					} else if let value = parameter.firstName {
 						parameterName = value
 					} else {
+						
+						/// No parameter name, using parameter type
+						
 						let valueCandidate = originalType.description
 						let totalSameTypeParameters = parameters
 							.map(\.type.description)
 							.count { $0 == valueCandidate }
 						
-						// print("\(caseNameText): Found \(totalSameTypeParameters) copies of \(valueCandidate) in \(parameters.map(\.type.description))")
-						
 						if totalSameTypeParameters <= 1 {
 							parameterName = "\(raw: valueCandidate)"
 							
-							let info = Diagnostic(
-								node: Syntax(node),
-								message: QizhMacroGeneratorDiagnostic(
-									"Found \(totalSameTypeParameters) copies of \(valueCandidate) in \(caseNameText) case, using \(parameterName)",
-									severity: .note
-								),
+							/*
+							context.diagnose(
+								.note(
+									node: Syntax(node),
+									message: "Single «\(valueCandidate)» parameter in «\(caseNameText)» case → using «\(parameterName)»",
+									id: "SingleParameterType"
+								)
 							)
-							context.diagnose(info)
+							*/
 						} else {
 							parameterName = "\(raw: valueCandidate)\(raw: index)"
 							
-							let info = Diagnostic(
-								node: Syntax(node),
-								message: QizhMacroGeneratorDiagnostic(
-									"Found \(totalSameTypeParameters) copies of \(valueCandidate) in \(caseNameText) case, using \(parameterName)",
-									severity: .note
-								),
+							context.diagnose(
+								.note(
+									node: Syntax(node),
+									message: "Found \(totalSameTypeParameters) copies of «\(valueCandidate)» in «\(caseNameText)» case → adding index → using «\(parameterName)»",
+									id: "MultipleSameParameterTypes"
+								)
 							)
-							context.diagnose(info)
 						}
 					}
 					
@@ -119,25 +110,25 @@ public struct CaseValueGenerator: MemberMacro {
 					if caseNameText.localizedLowercase == parameterName.text.localizedLowercase {
 						propertyName = caseNameText
 						
-						let info = Diagnostic(
-							node: Syntax(node),
-							message: QizhMacroGeneratorDiagnostic(
-								"Parameter name «\(parameterName.text)» is the same as «\(caseNameText)» case name → leaving case name only",
-								severity: .note
-							),
+						context.diagnose(
+							.note(
+								node: Syntax(node),
+								message: "Parameter name «\(parameterName.text)» is the same as «\(caseNameText)» case name → leaving case name only",
+								id: "SameParameterNameAsCaseName"
+							)
 						)
-						context.diagnose(info)
 					} else {
 						propertyName = "\(caseNameText)\(parameterName.text.capitalized)"
 						
-						let info = Diagnostic(
-							node: Syntax(node),
-							message: QizhMacroGeneratorDiagnostic(
-								"Parameter name «\(parameterName.text)» is different from «\(caseNameText)» case name → combining them as «\(propertyName)»",
-								severity: .note
-							),
+						/*
+						context.diagnose(
+							.note(
+								node: Syntax(node),
+								message: "Parameter name «\(parameterName.text)» is different from «\(caseNameText)» case name → combining them as «\(propertyName)»",
+								id: "DifferentParameterNameAndCaseName"
+							)
 						)
-						context.diagnose(info)
+						*/
 					}
 					
 					/// Output generation
