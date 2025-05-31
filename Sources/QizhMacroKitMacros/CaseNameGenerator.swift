@@ -9,6 +9,7 @@ public struct CaseNameGenerator: MemberMacro {
 	public static func expansion(
 		of node: AttributeSyntax,
 		providingMembersOf declaration: some DeclGroupSyntax,
+		conformingTo protocols: [TypeSyntax],
 		in context: some MacroExpansionContext
 	) throws -> [DeclSyntax] {
 		
@@ -32,6 +33,7 @@ public struct CaseNameGenerator: MemberMacro {
 			return []
 		}
 		
+		/*
 		/// Parse the attribute argument for snakeCase (default is false)
 		var snakeCase = false
 		if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
@@ -65,6 +67,7 @@ public struct CaseNameGenerator: MemberMacro {
 				}
 			}
 		}
+		*/
 		
 		let modifiers = enumDecl.modifiers.map(\.name.text)
 		let modifiersString: String = modifiers.isEmpty 
@@ -80,8 +83,7 @@ public struct CaseNameGenerator: MemberMacro {
 			
 			for element in enumCaseDecl.elements {
 				let caseName = element.name.text
-				let computedName = snakeCase ? toSnakeCase(caseName) : caseName
-				resultString += "\ncase .\(caseName): \"\(computedName)\""
+				resultString += "\ncase .\(caseName): \"\(caseName)\""
 			}
 		}
 		
@@ -90,6 +92,7 @@ public struct CaseNameGenerator: MemberMacro {
 		return ["\(raw: resultString)"]
 	}
 	
+	/*
 	/// Helper function to convert `any_or_camelCase` to `snake_case`
 	fileprivate static func toSnakeCase(_ input: String) -> String {
 		var result = ""
@@ -103,5 +106,5 @@ public struct CaseNameGenerator: MemberMacro {
 		}
 		return result
 	}
-
+	*/
 }
