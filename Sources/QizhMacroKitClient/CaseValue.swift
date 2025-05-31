@@ -26,7 +26,7 @@ fileprivate enum TestEnum {
 	case bar(_ id: UInt)
 	case content(_ name: String, _ value: Content)
 	case customer(UInt)
-	case visit(UInt, String)
+	case visit(UInt, String, Date, UInt)
 	case request(_ id: UInt, _ name: String)
 	case unknown
 }

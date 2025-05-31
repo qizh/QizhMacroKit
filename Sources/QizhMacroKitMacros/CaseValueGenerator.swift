@@ -55,12 +55,67 @@ public struct CaseValueGenerator: MemberMacro {
 				let totalParameters = parameters.count
 				
 				for (index, parameter) in parameters.enumerated() {
-					let parameterName = parameter.secondName ?? parameter.firstName ?? ""
+					let originalType = parameter.type
 					
-					let parameterNameText = parameterName.text
-					let parameterTypeName = parameter.type.description
+					/// Generate parameter name
 					
-					let propertyName = "\(caseNameText) \(parameterNameText)".toCamelCase
+					let parameterName: TokenSyntax
+					if let value = parameter.secondName {
+						parameterName = value
+					} else if let value = parameter.firstName {
+						parameterName = value
+					} else {
+						let valueCandidate = originalType.description
+						let totalSameTypeParameters = parameters
+							.map(\.type.description)
+							.count { $0 == valueCandidate }
+						
+						// print("\(caseNameText): Found \(totalSameTypeParameters) copies of \(valueCandidate) in \(parameters.map(\.type.description))")
+						
+						if totalSameTypeParameters <= 1 {
+							parameterName = "\(raw: valueCandidate)"
+							
+							let info = Diagnostic(
+								node: Syntax(node),
+								message: QizhMacroGeneratorDiagnostic(
+									"Found \(totalSameTypeParameters) copies of \(valueCandidate) in \(caseNameText) case, using \(parameterName)",
+									severity: .note
+								),
+							)
+							context.diagnose(info)
+						} else {
+							parameterName = "\(raw: valueCandidate)\(raw: index)"
+							
+							let info = Diagnostic(
+								node: Syntax(node),
+								message: QizhMacroGeneratorDiagnostic(
+									"Found \(totalSameTypeParameters) copies of \(valueCandidate) in \(caseNameText) case, using \(parameterName)",
+									severity: .note
+								),
+							)
+							context.diagnose(info)
+						}
+					}
+					
+					/// Make output parameter `Optional`
+					
+					let isParameterOptional =
+						originalType.as(OptionalTypeSyntax.self) != nil
+					|| 	originalType.as(IdentifierTypeSyntax.self)?.name.text == "Optional"
+					
+					let parameterTypeName: String
+					if isParameterOptional {
+						parameterTypeName = originalType.description
+							.trimmingCharacters(in: .whitespacesAndNewlines)
+					} else {
+						parameterTypeName = originalType.description
+							.trimmingCharacters(in: .whitespacesAndNewlines)
+							+ "?"
+					}
+					
+					/// Output generation
+					
+					let propertyName = "\(caseNameText)\(parameterName.text.capitalized)"
 					let parametersList = parametersString(for: index, of: totalParameters)
 					
 					let addedProperty: DeclSyntax = """
