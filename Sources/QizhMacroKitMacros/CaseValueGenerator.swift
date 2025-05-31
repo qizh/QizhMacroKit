@@ -113,9 +113,35 @@ public struct CaseValueGenerator: MemberMacro {
 							+ "?"
 					}
 					
+					/// Use case name only when parameter name is the same
+					
+					let propertyName: String
+					if caseNameText.localizedLowercase == parameterName.text.localizedLowercase {
+						propertyName = caseNameText
+						
+						let info = Diagnostic(
+							node: Syntax(node),
+							message: QizhMacroGeneratorDiagnostic(
+								"Parameter name «\(parameterName.text)» is the same as «\(caseNameText)» case name → leaving case name only",
+								severity: .note
+							),
+						)
+						context.diagnose(info)
+					} else {
+						propertyName = "\(caseNameText)\(parameterName.text.capitalized)"
+						
+						let info = Diagnostic(
+							node: Syntax(node),
+							message: QizhMacroGeneratorDiagnostic(
+								"Parameter name «\(parameterName.text)» is different from «\(caseNameText)» case name → combining them as «\(propertyName)»",
+								severity: .note
+							),
+						)
+						context.diagnose(info)
+					}
+					
 					/// Output generation
 					
-					let propertyName = "\(caseNameText)\(parameterName.text.capitalized)"
 					let parametersList = parametersString(for: index, of: totalParameters)
 					
 					let addedProperty: DeclSyntax = """
