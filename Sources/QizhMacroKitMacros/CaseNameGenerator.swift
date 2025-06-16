@@ -82,7 +82,7 @@ public struct CaseNameGenerator: MemberMacro {
 			}
 			
 			for element in enumCaseDecl.elements {
-				let caseName = element.name.text
+				let caseName = element.name.text.withBackticksTrimmed
 				resultString += "\ncase .\(caseName): \"\(caseName)\""
 			}
 		}

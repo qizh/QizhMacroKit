@@ -15,4 +15,7 @@ fileprivate enum Status {
 	case success(data: Data)
 	case failure(error: Error)
 	case inSuperLongProgress(_ loaded: Double, of: Double)
+	case onSelect(_ callback: () -> Void)
+	case `default`(Bool)
+	case `is`(_ value: Bool)
 }

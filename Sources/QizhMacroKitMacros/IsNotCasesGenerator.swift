@@ -38,7 +38,7 @@ public struct IsNotCasesGenerator: MemberMacro {
 			}
 			
 			for element in enumCaseDecl.elements {
-				let caseName = element.name.text
+				let caseName = element.name.text.withBackticksTrimmed
 				let propertyName = "isNot\(caseName.prefix(1).uppercased())\(caseName.dropFirst())"
 				
 				let property: DeclSyntax = """

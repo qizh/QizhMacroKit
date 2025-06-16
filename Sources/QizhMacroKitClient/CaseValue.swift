@@ -28,5 +28,8 @@ fileprivate enum TestEnum {
 	case customer(UInt)
 	case visit(UInt, String, Date, UInt)
 	case request(_ id: UInt, _ name: String)
+	case onSelect(_ callback: () -> Void)
 	case unknown
+	case `default`(Bool)
+	case `is`(_ value: Bool)
 }

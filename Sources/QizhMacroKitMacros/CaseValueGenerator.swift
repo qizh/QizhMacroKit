@@ -38,7 +38,7 @@ public struct CaseValueGenerator: MemberMacro {
 			}
 			
 			for element in enumCaseDecl.elements {
-				let caseNameText = element.name.text
+				let caseNameText = element.name.text.withBackticksTrimmed
 				
 				guard let parameters = element.parameterClause?.parameters else { continue }
 				
@@ -90,18 +90,27 @@ public struct CaseValueGenerator: MemberMacro {
 					
 					/// Make output parameter `Optional`
 					
+					var parameterTypeName: String = originalType.description
+						.trimmingCharacters(in: .whitespacesAndNewlines)
+					
+					if originalType.as(FunctionTypeSyntax.self) != nil {
+						context.diagnose(
+							.note(
+								node: Syntax(node),
+								message: "Found parameter of function type «\(originalType)»: \(parameterTypeName)",
+								id: "FunctionParameterType"
+							)
+						)
+						
+						parameterTypeName = "(\(parameterTypeName))"
+					}
+					
 					let isParameterOptional =
 						originalType.as(OptionalTypeSyntax.self) != nil
 					|| 	originalType.as(IdentifierTypeSyntax.self)?.name.text == "Optional"
 					
-					let parameterTypeName: String
-					if isParameterOptional {
-						parameterTypeName = originalType.description
-							.trimmingCharacters(in: .whitespacesAndNewlines)
-					} else {
-						parameterTypeName = originalType.description
-							.trimmingCharacters(in: .whitespacesAndNewlines)
-							+ "?"
+					if !isParameterOptional {
+						parameterTypeName = "\(parameterTypeName)?"
 					}
 					
 					/// Use case name only when parameter name is the same

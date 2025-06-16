@@ -15,15 +15,6 @@ fileprivate enum Status {
 	case success(data: Data)
 	case failure(_ error: Error)
 	case inSuperLongProgress(_ loaded: Double, of: Double)
+	case onSelect(_ callback: () -> Void)
+	case `default`
 }
-
-/*
-@CaseName(snakeCase: true)
-fileprivate enum Status2 {
-	case idleState
-	case loadingNow
-	case success(data: Data)
-	case failure(_ error: Error)
-	case inSuperLongProgress(_ loaded: Double, of: Double)
-}
-*/
