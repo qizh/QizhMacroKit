@@ -8,30 +8,9 @@
 
 import Foundation
 import RegexBuilder
+import Playgrounds
 
-fileprivate actor Regexes {
-	fileprivate static let beforeLargeCharacterRef = Reference(Substring.self)
-	fileprivate static let largeCharacterRef = Reference(Character.self)
-
-	/// Matches a lowercase letter or digit followed by an uppercase letter.
-	///
-	/// Captures the preceding lowercase letter or digit (as `beforeLargeCharacterRef`)
-	/// and the uppercase letter (as `largeCharacterRef`).
-	/// Useful for identifying camelCase boundaries when converting between case styles.
-	fileprivate static let captureLargeCharactersAfterSmall: Regex = Regex {
-		Capture(as: beforeLargeCharacterRef) {
-			CharacterClass(
-				("a"..."z"),
-				("0"..."9")
-			)
-		}
-		TryCapture(as: largeCharacterRef) {
-			("A"..."Z")
-		} transform: { substring in
-			substring.first
-		}
-	}
-	
+internal struct Regexes {
 	/// Matches individual “words” based on Unicode word boundaries.
 	///
 	/// A word can be:
@@ -43,17 +22,20 @@ fileprivate actor Regexes {
 	///
 	/// Useful for splitting identifiers into their component words
 	/// when converting between `camelCase`, `snake_case`, etc.
-	fileprivate static let words: Regex = Regex {
-		ChoiceOf {
-			Regex {
-				Optionally { #/\p{Lu}/# }
-				OneOrMore { #/\p{Ll}/# }
+	fileprivate static var words: Regex<Substring> {
+		Regex {
+			ChoiceOf {
+				Regex {
+					Optionally { #/\p{Lu}/# }
+					OneOrMore { #/\p{Ll}/# }
+				}
+				Regex {
+					OneOrMore { #/\p{Lu}/# }
+					NegativeLookahead { #/\p{Ll}/# }
+				}
+				OneOrMore { #/\p{L}/# }
+				OneOrMore { #/\d/# }
 			}
-			Regex {
-				OneOrMore { #/\p{Lu}/# }
-				NegativeLookahead { #/\p{Ll}/# }
-			}
-			OneOrMore { #/\p{L}/# }
 		}
 	}
 }
