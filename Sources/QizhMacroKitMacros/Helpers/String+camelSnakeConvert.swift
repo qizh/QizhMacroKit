@@ -8,7 +8,6 @@
 
 import Foundation
 import RegexBuilder
-import Playgrounds
 
 internal struct Regexes {
 	/// Matches individual “words” based on Unicode word boundaries.
