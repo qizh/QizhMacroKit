@@ -1,4 +1,4 @@
-// swift-tools-version:6.0
+// swift-tools-version:6.1
 
 import PackageDescription
 import CompilerPluginSupport
@@ -20,10 +20,16 @@ let package = Package(
 			name: "QizhMacroKitClient",
 			targets: ["QizhMacroKitClient"]
 		),
+		/*
+		.library(
+			name: "QizhMacroKitPlayground",
+			type: .dynamic,
+			targets: ["QizhMacroKitPlayground"]
+		)
+		*/
 	],
 	dependencies: [
-		// .package(url: "https://github.com/swiftlang/swift-syntax.git", exact: "600.0.0"),
-		.package(url: "https://github.com/swiftlang/swift-syntax.git", "600.0.0" ..< "700.0.0"),
+		.package(url: "https://github.com/swiftlang/swift-syntax.git", "601.0.0" ..< "700.0.0"),
 	],
 	targets: [
 		
@@ -52,6 +58,21 @@ let package = Package(
 			]
 		),
 		
+		/// Internal library to test macros with playgrounds
+		
+		/*
+		.target(
+			name: "QizhMacroKitPlayground",
+			dependencies: [
+				"QizhMacroKit",
+			],
+			path: "Sources/Playgrounds",
+			swiftSettings: [
+				.define("ENABLE_DEBUG_DYLIB", .when(configuration: .debug))
+			]
+		),
+		*/
+		
 		/// Client executable target that uses the macro
 		
 		.executableTarget(
@@ -64,7 +85,6 @@ let package = Package(
 		
 		/// Test target
 		
-		/*
 		.testTarget(
 			name: "QizhMacroKitTests",
 			dependencies: [
@@ -72,7 +92,6 @@ let package = Package(
 				.product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
 			]
 		),
-		*/
 	],
 	swiftLanguageModes: [
 		// .v5,

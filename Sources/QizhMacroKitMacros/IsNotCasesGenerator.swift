@@ -17,7 +17,11 @@ public struct IsNotCasesGenerator: MemberMacro {
 		guard let enumDecl = declaration.as(EnumDeclSyntax.self) else {
 			let error = Diagnostic(
 				node: Syntax(node),
-				message: QizhMacroGeneratorDiagnostic("@IsNotCase can only be applied to enums")
+				message: QizhMacroGeneratorDiagnostic(
+					message: "@IsNotCase can only be applied to enums",
+					id: .invalidUsage,
+					severity: .error
+				)
 			)
 			context.diagnose(error)
 			return []
