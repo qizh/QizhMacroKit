@@ -11,4 +11,4 @@ public macro stringify<T>(_ value: T) -> String = #externalMacro(module: "QizhMa
 
 /// - Returns: `(value: T, string: String)`
 @freestanding(expression)
-public macro stringifyAndCalculate<T>(_ value: T) -> (value: T, string: String) = #externalMacro(module: "QizhMacroKitMacros", type: "StringifyAndCalculateGenerator")
+public macro dictionarify<T>(_ value: T) -> Dictionary<String, T>.Element = #externalMacro(module: "QizhMacroKitMacros", type: "DictionarifyGenerator")

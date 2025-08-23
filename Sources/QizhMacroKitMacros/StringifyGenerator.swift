@@ -22,15 +22,15 @@ public struct StringifyGenerator: ExpressionMacro {
 	}
 }
 
-// MARK: Stringify with Source
+// MARK: Dictionarify
 
-public struct StringifyAndCalculateGenerator: ExpressionMacro {
+public struct DictionarifyGenerator: ExpressionMacro {
 	public static func expansion(
 		of node: some FreestandingMacroExpansionSyntax,
 		in context: some MacroExpansionContext
 	) throws -> ExprSyntax {
 		let argument = try firstArgument(of: node)
-		return "(value: \(argument), string: \(literal: argument.description))"
+		return "(key: \(literal: argument.description), value: \(argument))"
 	}
 }
 

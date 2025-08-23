@@ -16,9 +16,9 @@ func shouldBeNoErrors() {
 	_ = #stringify(isConnected && connectionID != nil)
 	_ = #stringify(connectionID != nil)
 	
-	_ = #stringifyAndCalculate(isConnected)
-	_ = #stringifyAndCalculate(isConnected && connectionID != nil)
-	_ = #stringifyAndCalculate(connectionID != nil)
+	_ = #dictionarify(isConnected)
+	_ = #dictionarify(isConnected && connectionID != nil)
+	_ = #dictionarify(connectionID != nil)
 }
 
 /*

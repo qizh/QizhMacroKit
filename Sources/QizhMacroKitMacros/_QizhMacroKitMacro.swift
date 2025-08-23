@@ -12,6 +12,6 @@ struct QizhMacroKitPlugin: CompilerPlugin {
 		CaseNameGenerator.self,
 		CaseValueGenerator.self,
 		StringifyGenerator.self,
-		StringifyAndCalculateGenerator.self,
+		DictionarifyGenerator.self,
 	]
 }
