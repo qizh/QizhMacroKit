@@ -28,7 +28,8 @@ public struct IsCasesGenerator: MemberMacro {
 		}
 		
 		let members = enumDecl.memberBlock.members
-		var computedProperties: [DeclSyntax] = []
+		var additions: [DeclSyntax] = []
+		var caseNames: [String] = []
 		
 		let modifiers = enumDecl.modifiers
 			.map(\.name.text)
@@ -43,19 +44,71 @@ public struct IsCasesGenerator: MemberMacro {
 			
 			for element in enumCaseDecl.elements {
 				let caseName = element.name.text.withBackticksTrimmed
+				caseNames.append(caseName)
+				let escapedCaseName = caseName.escapedSwiftIdentifier
 				let propertyName = "is\(caseName.prefix(1).uppercased())\(caseName.dropFirst())"
 				
 				let property: DeclSyntax = """
-				\(raw: modifiersString)var \(raw: propertyName): Bool {
-					switch self {
-					case .\(raw: caseName): true
-					default: false
+					/// Returns `true` if `self` is `.\(raw: escapedCaseName)`.
+					\(raw: modifiersString)var \(raw: propertyName): Bool {
+						switch self {
+						case .\(raw: escapedCaseName): true
+						default: false
+						}
 					}
-				}
-				"""
-				computedProperties.append(property)
+					"""
+				additions.append(property)
 			}
 		}
-		return computedProperties
+		
+		// Generate Cases enum
+		let casesLines = caseNames
+			.map { "        case \($0.escapedSwiftIdentifier)" }
+			.joined(separator: "\n")
+		let casesDecl: DeclSyntax = """
+			/// A parameterless representation of `\(raw: enumDecl.name.text)` cases.
+			\(raw: modifiersString)enum Cases: Equatable {
+			\(raw: casesLines)
+			}
+			"""
+		
+		// Property converting self to Cases
+		let mappingLines = caseNames
+			.map { name in
+				let escaped = name.escapedSwiftIdentifier
+				return "        case .\(escaped): .\(escaped)"
+			}
+			.joined(separator: "\n")
+		let caseValueProperty: DeclSyntax = """
+			/// A parameterless representation of this case.
+			private var caseValue: Cases {
+					switch self {
+			\(raw: mappingLines)
+					}
+			}
+			"""
+		
+		// Methods for checking membership
+		let arrayMethod: DeclSyntax = """
+			/// Returns `true` if `self` matches any case in `cases`.
+			/// - Parameter cases: An array of cases to match against.
+			\(raw: modifiersString)func isAmong(_ cases: [Cases]) -> Bool {
+					cases.contains(self.caseValue)
+			}
+			"""
+		
+		let variadicMethod: DeclSyntax = """
+			/// Returns `true` if `self` matches any of the provided cases.
+			/// - Parameter cases: The cases to match against.
+			\(raw: modifiersString)func isAmong(_ cases: Cases...) -> Bool {
+					isAmong(cases)
+			}
+			"""
+		
+		additions.append(casesDecl)
+		additions.append(caseValueProperty)
+		additions.append(arrayMethod)
+		additions.append(variadicMethod)
+		return additions
 	}
 }
