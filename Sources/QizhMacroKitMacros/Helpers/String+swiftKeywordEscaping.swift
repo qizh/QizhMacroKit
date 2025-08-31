@@ -14,13 +14,13 @@ private let swiftKeywords: Set<String> = [
         "var", "break", "case", "catch", "continue", "default", "defer",
         "do", "else", "fallthrough", "for", "guard", "if", "in", "repeat",
         "return", "throw", "throws", "rethrows", "where", "while", "as",
-        "is", "try", "super", "self", "Self", "any", "switch", "macro",
+        "is", "try", "super", "self", "any", "switch", "macro",
         "actor", "await", "async", "final", "open", "some"
 ]
 
 extension String {
         /// Returns the string wrapped in backticks if it is a Swift reserved keyword.
         internal var escapedSwiftIdentifier: String {
-                swiftKeywords.contains(self) ? "`\(self)`" : self
+                swiftKeywords.contains(self.lowercased()) ? "`\(self)`" : self
         }
 }

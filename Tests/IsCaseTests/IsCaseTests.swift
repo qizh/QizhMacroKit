@@ -45,4 +45,18 @@ struct IsCaseMacroTests {
                 #expect(nextAction.isAmong([.setup, .update, .sync]))
                 #expect(!nextAction.isAmong(.export, .import))
         }
+
+        @Test("Escapes uppercase Swift keywords")
+        func escapesUppercaseSwiftKeywords() {
+                @IsCase
+                enum Keywords {
+                        case `Any`
+                        case value
+                }
+
+                let keyword: Keywords = .Any
+                #expect(keyword.isAny)
+                #expect(!keyword.isValue)
+                #expect(keyword.isAmong(.`Any`))
+        }
 }
