@@ -30,7 +30,7 @@ let package = Package(
 	],
         dependencies: [
                 .package(url: "https://github.com/swiftlang/swift-syntax.git", "601.0.0" ..< "700.0.0"),
-                .package(url: "https://github.com/apple/swift-collections.git", .upToNextMajor(from: "1.2.0")),
+                // .package(url: "https://github.com/apple/swift-collections.git", .upToNextMajor(from: "1.2.0")),
                 .package(url: "https://github.com/apple/swift-testing.git", branch: "main"),
 
         ],
