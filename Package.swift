@@ -98,7 +98,8 @@ let package = Package(
                                 "QizhMacroKitMacros",
                                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
                                 .product(name: "Testing", package: "swift-testing"),
-                        ]
+                        ],
+                        path: "Tests"
                 ),
 	],
 	swiftLanguageModes: [
