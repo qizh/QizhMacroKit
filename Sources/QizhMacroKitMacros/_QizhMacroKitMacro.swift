@@ -10,8 +10,9 @@ struct QizhMacroKitPlugin: CompilerPlugin {
 		IsCasesGenerator.self,
 		IsNotCasesGenerator.self,
 		CaseNameGenerator.self,
-		CaseValueGenerator.self,
-		StringifyGenerator.self,
-		DictionarifyGenerator.self,
-	]
+                CaseValueGenerator.self,
+                StringifyGenerator.self,
+                DictionarifyGenerator.self,
+                LabeledGenerator.self,
+        ]
 }
