@@ -30,7 +30,7 @@ let package = Package(
 	],
         dependencies: [
                 .package(url: "https://github.com/swiftlang/swift-syntax.git", "601.0.0" ..< "700.0.0"),
-                // .package(url: "https://github.com/apple/swift-collections.git", .upToNextMajor(from: "1.2.0")),
+                .package(url: "https://github.com/apple/swift-collections.git", .upToNextMajor(from: "1.2.0")),
                 .package(url: "https://github.com/apple/swift-testing.git", branch: "main"),
 
         ],
@@ -44,8 +44,8 @@ let package = Package(
 				.product(name: "SwiftSyntax", package: "swift-syntax"),
 				.product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
 				.product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
-				.product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
-				// .product(name: "OrderedCollections", package: "swift-collections"),
+                                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
+                                .product(name: "OrderedCollections", package: "swift-collections"),
 			]
 		),
 		
@@ -53,9 +53,9 @@ let package = Package(
 		
 		.target(
 			name: "QizhMacroKit",
-			dependencies: [
-				// .product(name: "OrderedCollections", package: "swift-collections"),
-			],
+                        dependencies: [
+                                .product(name: "OrderedCollections", package: "swift-collections"),
+                        ],
 			resources: [
 				.process("PrivacyInfo.xcprivacy")
 			],
@@ -98,6 +98,7 @@ let package = Package(
                                 "QizhMacroKitMacros",
                                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
                                 .product(name: "Testing", package: "swift-testing"),
+                                .product(name: "OrderedCollections", package: "swift-collections"),
                         ],
                         path: "Tests"
                 ),
