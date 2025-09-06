@@ -1,0 +1,29 @@
+{
+  "configurations" : [
+    {
+      "id" : "61218A19-083B-4033-B604-24FEB44ACAF3",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:",
+      "identifier" : "QizhMacroKitClient",
+      "name" : "QizhMacroKitClient"
+    }
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "QizhMacroKitTests",
+        "name" : "QizhMacroKitTests"
+      }
+    }
+  ],
+  "version" : 1
+}
