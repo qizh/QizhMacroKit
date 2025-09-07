@@ -34,6 +34,7 @@ public macro LabeledViews() = #externalMacro(
 ///       }
 ///   }
 @attached(body)
+@attached(accessor)
 public macro LabeledViews() = #externalMacro(
 	module: "QizhMacroKitMacros",
 	type: "LabeledViewsMacro"

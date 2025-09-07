@@ -1,4 +1,4 @@
-// swift-tools-version:6.1
+// swift-tools-version:6.2
 
 import PackageDescription
 import CompilerPluginSupport
@@ -28,12 +28,12 @@ let package = Package(
 		)
 		*/
 	],
-        dependencies: [
-                .package(url: "https://github.com/swiftlang/swift-syntax.git", "601.0.0" ..< "700.0.0"),
-                // .package(url: "https://github.com/apple/swift-collections.git", .upToNextMajor(from: "1.2.0")),
-                .package(url: "https://github.com/apple/swift-testing.git", branch: "main"),
-
-        ],
+	dependencies: [
+		.package(url: "https://github.com/swiftlang/swift-syntax.git", "601.0.0" ..< "700.0.0"),
+		// .package(url: "https://github.com/apple/swift-collections.git", .upToNextMajor(from: "1.2.0")),
+		.package(url: "https://github.com/apple/swift-testing.git", branch: "main"),
+		
+	],
 	targets: [
 		
 		/// Macro plugin target
@@ -91,16 +91,16 @@ let package = Package(
 		
 		/// Test target
 		
-                .testTarget(
-                        name: "QizhMacroKitTests",
-                        dependencies: [
-                                "QizhMacroKit",
-                                "QizhMacroKitMacros",
-                                .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
-                                .product(name: "Testing", package: "swift-testing"),
-                        ],
-                        path: "Tests"
-                ),
+		.testTarget(
+			name: "QizhMacroKitTests",
+			dependencies: [
+				"QizhMacroKit",
+				"QizhMacroKitMacros",
+				.product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
+				.product(name: "Testing", package: "swift-testing"),
+			],
+			path: "Tests"
+		),
 	],
 	swiftLanguageModes: [
 		// .v5,

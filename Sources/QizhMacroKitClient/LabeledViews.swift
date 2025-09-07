@@ -14,12 +14,13 @@ struct LabeledViews<Content: View>: View {
 	var body: some View { content() }
 }
 
-extension View {
+extension String {
 	func labeledView(label: String) -> some View {
-		VStack(alignment: .leading, spacing: 4) {
-			Text(label).font(.caption).foregroundStyle(.secondary)
-			self
+		HStack(alignment: .firstTextBaseline, spacing: 4) {
+			Text(label).foregroundStyle(.secondary)
+			Text(self)
 		}
+		.font(.caption)
 	}
 }
 
@@ -28,10 +29,18 @@ struct TestView: View {
 	let lastName = "Shevchenko"
 	
 	var body: some View {
-		name1
-		name2
+		getName()
+		// name1
+		// name2
 	}
 	
+	@LabeledViews
+	func getName() -> some View {
+		firstName
+		lastName
+	}
+	
+	/*
 	var name1: some View {
 		@LabeledViews
 		get {
@@ -39,9 +48,10 @@ struct TestView: View {
 			lastName
 		}
 	}
+	*/
 	
 	@LabeledViews
-	var name2: some View {
+	var name: some View {
 		firstName
 		lastName
 	}
