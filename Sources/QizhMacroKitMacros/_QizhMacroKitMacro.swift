@@ -13,5 +13,6 @@ struct QizhMacroKitPlugin: CompilerPlugin {
 		CaseValueGenerator.self,
 		StringifyGenerator.self,
 		DictionarifyGenerator.self,
+		LabeledViewsMacro.self,
 	]
 }
