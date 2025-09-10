@@ -67,7 +67,7 @@ public struct IsCasesGenerator: MemberMacro {
 			.joined(separator: "\n")
 		let casesDecl: DeclSyntax = """
 			/// A parameterless representation of `\(raw: enumDecl.name.text)` cases.
-			\(raw: modifiersString)enum Cases: Equatable {
+			\(raw: modifiersString)enum Cases: Equatable, CaseIterable {
 			\(raw: casesLines)
 			}
 			"""
@@ -81,10 +81,10 @@ public struct IsCasesGenerator: MemberMacro {
 			.joined(separator: "\n")
 		let caseValueProperty: DeclSyntax = """
 			/// A parameterless representation of this case.
-			private var caseValue: Cases {
-					switch self {
+			\(raw: modifiersString)var parametersErasedCase: Cases {
+				switch self {
 			\(raw: mappingLines)
-					}
+				}
 			}
 			"""
 		
@@ -93,7 +93,7 @@ public struct IsCasesGenerator: MemberMacro {
 			/// Returns `true` if `self` matches any case in `cases`.
 			/// - Parameter cases: An array of cases to match against.
 			\(raw: modifiersString)func isAmong(_ cases: [Cases]) -> Bool {
-					cases.contains(self.caseValue)
+				cases.contains(self.parametersErasedCase)
 			}
 			"""
 		
@@ -101,7 +101,7 @@ public struct IsCasesGenerator: MemberMacro {
 			/// Returns `true` if `self` matches any of the provided cases.
 			/// - Parameter cases: The cases to match against.
 			\(raw: modifiersString)func isAmong(_ cases: Cases...) -> Bool {
-					isAmong(cases)
+				isAmong(cases)
 			}
 			"""
 		
