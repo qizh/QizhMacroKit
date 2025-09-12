@@ -129,7 +129,7 @@ public struct CaseValueGenerator: MemberMacro {
 							)
 						)
 					} else {
-						propertyName = "\(caseNameText)\(parameterName.text.capitalized)"
+						propertyName = "\(caseNameText)\(parameterName.text)".toCamelCase
 						
 						/*
 						context.diagnose(
