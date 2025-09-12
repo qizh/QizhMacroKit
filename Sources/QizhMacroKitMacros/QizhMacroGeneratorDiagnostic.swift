@@ -5,6 +5,10 @@
 //  Created by Serhii Shevchenko on 08.10.2024.
 //
 
+import SwiftDiagnostics
+
+fileprivate let qizhDomainName = "net.qizh"
+
 // MARK: Diagnostic Message
 
 /// Custom DiagnosticMessage implementation
@@ -70,6 +74,7 @@ extension QizhMacroGeneratorDiagnostic: CustomStringConvertible {
 public enum QizhDiagnosticCode: Hashable, Sendable {
 	case missingArgument
 	case invalidUsage
+	case noEnumCases
 	case custom(_ code: String)
 }
 
@@ -82,6 +87,7 @@ extension QizhDiagnosticCode: RawRepresentable, CustomStringConvertible {
 		switch self {
 		case .missingArgument: "missingArgument"
 		case .invalidUsage: "invalidUsage"
+		case .noEnumCases: "noEnumCases"
 		case .custom(let code): code
 		}
 	}
@@ -97,13 +103,63 @@ extension QizhDiagnosticCode: ExpressibleByStringLiteral {
 	}
 }
 
+// MARK: Message ID
+
+public enum QizhFixMessageID: Hashable, Sendable {
+	case addCase
+	case custom(_ code: String)
+}
+
+extension QizhFixMessageID: RawRepresentable, CustomStringConvertible {
+	public init(rawValue: String) {
+		self = .custom(rawValue)
+	}
+	
+	@inlinable public var rawValue: String {
+		switch self {
+		case .addCase: "addCase"
+		case .custom(let code): code
+		}
+	}
+	
+	@inlinable public var description: String {
+		rawValue
+	}
+}
+
+extension QizhFixMessageID: ExpressibleByStringLiteral {
+	@inlinable public init(stringLiteral value: String) {
+		self = .custom(value)
+	}
+}
+
+// MARK: FixMessage
+
+public struct FixMessage: FixItMessage {
+	public let message: String
+	public let fixItID: MessageID
+	
+	public init(message: String, fixItID: MessageID) {
+		self.message = message
+		self.fixItID = fixItID
+	}
+	
+	public init(message: String, id: QizhFixMessageID) {
+		self.init(
+			message: message,
+			fixItID: MessageID(domain: qizhDomainName, id: id.rawValue)
+		)
+	}
+}
+
 // MARK: Diagnostic +
 
 extension Diagnostic {
 	public static func error(
 		node: some SyntaxProtocol,
 		message: String,
-		id messageID: QizhDiagnosticCode
+		id messageID: QizhDiagnosticCode,
+		fixIts: [FixIt] = []
 	) -> Diagnostic {
 		Diagnostic(
 			node: node,
@@ -111,14 +167,16 @@ extension Diagnostic {
 				message: message,
 				id: messageID,
 				severity: .error
-			)
+			),
+			fixIts: fixIts
 		)
 	}
 	
 	public static func warning(
 		node: some SyntaxProtocol,
 		message: String,
-		id messageID: QizhDiagnosticCode
+		id messageID: QizhDiagnosticCode,
+		fixIts: [FixIt] = []
 	) -> Diagnostic {
 		Diagnostic(
 			node: node,
@@ -126,14 +184,16 @@ extension Diagnostic {
 				message: message,
 				id: messageID,
 				severity: .warning
-			)
+			),
+			fixIts: fixIts
 		)
 	}
 	
 	public static func note(
 		node: some SyntaxProtocol,
 		message: String,
-		id messageID: QizhDiagnosticCode
+		id messageID: QizhDiagnosticCode,
+		fixIts: [FixIt] = []
 	) -> Diagnostic {
 		Diagnostic(
 			node: node,
@@ -141,14 +201,16 @@ extension Diagnostic {
 				message: message,
 				id: messageID,
 				severity: .note
-			)
+			),
+			fixIts: fixIts
 		)
 	}
 	
 	public static func remark(
 		node: some SyntaxProtocol,
 		message: String,
-		id messageID: QizhDiagnosticCode
+		id messageID: QizhDiagnosticCode,
+		fixIts: [FixIt] = []
 	) -> Diagnostic {
 		Diagnostic(
 			node: node,
@@ -156,7 +218,8 @@ extension Diagnostic {
 				message: message,
 				id: messageID,
 				severity: .remark
-			)
+			),
+			fixIts: fixIts
 		)
 	}
 }
