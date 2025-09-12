@@ -38,28 +38,71 @@ public struct IsCasesGenerator: MemberMacro {
 			? ""
 			: accessModifiers.joined(separator: " ") + " "
 		
-		/// Iterate over each case in the enum
-		for member in members {
-			guard let enumCaseDecl = member.decl.as(EnumCaseDeclSyntax.self) else {
-				continue
+		if members.isEmpty {
+			context.diagnose(
+				Diagnostic.warning(
+					node: Syntax(node),
+					message: "There are no cases in the enum, so `@IsCase` can NOT be applied. You may want to add a case.",
+					id: .noEnumCases
+				)
+			)
+			return []
+		} else if members.count == 1 {
+			guard let element = members.first?.decl.as(EnumCaseDeclSyntax.self)?.elements.first else {
+				context.diagnose(
+					Diagnostic.error(
+						node: Syntax(node),
+						message: "The only member of enum is not a case, so `@IsCase` can NOT be applied.",
+						id: .noEnumCases
+						/*
+						fixIts: [
+							FixIt(
+								message: FixMessage(message: "Add a case to the enum", id: .addCase),
+								changes: []
+							)
+						]
+						*/
+					)
+				)
+				return []
 			}
 			
-			for element in enumCaseDecl.elements {
-				let caseName = element.name.text.withBackticksTrimmed
-				caseNames.append(caseName)
-				let escapedCaseName = caseName.escapedSwiftIdentifier
-				let propertyName = "is\(caseName.prefix(1).uppercased())\(caseName.dropFirst())"
+			let caseName = element.name.text.withBackticksTrimmed
+			caseNames.append(caseName)
+			let escapedCaseName = caseName.escapedSwiftIdentifier
+			let propertyName = "is\(caseName.prefix(1).uppercased())\(caseName.dropFirst())"
+			
+			let property: DeclSyntax = """
+				/// Always return `true` because `self` has just `.\(raw: escapedCaseName)` case.
+				\(raw: modifiersString)var \(raw: propertyName): Bool {
+					true
+				}
+				"""
+			additions.append(property)
+		} else {
+			/// Iterate over each case in the enum
+			for member in members {
+				guard let enumCaseDecl = member.decl.as(EnumCaseDeclSyntax.self) else {
+					continue
+				}
 				
-				let property: DeclSyntax = """
-					/// Returns `true` if `self` is `.\(raw: escapedCaseName)`.
-					\(raw: modifiersString)var \(raw: propertyName): Bool {
-						switch self {
-						case .\(raw: escapedCaseName): true
-						default: false
+				for element in enumCaseDecl.elements {
+					let caseName = element.name.text.withBackticksTrimmed
+					caseNames.append(caseName)
+					let escapedCaseName = caseName.escapedSwiftIdentifier
+					let propertyName = "is\(caseName.prefix(1).uppercased())\(caseName.dropFirst())"
+					
+					let property: DeclSyntax = """
+						/// Returns `true` if `self` is `.\(raw: escapedCaseName)`.
+						\(raw: modifiersString)var \(raw: propertyName): Bool {
+							switch self {
+							case .\(raw: escapedCaseName): true
+							default: false
+							}
 						}
-					}
-					"""
-				additions.append(property)
+						"""
+					additions.append(property)
+				}
 			}
 		}
 		
