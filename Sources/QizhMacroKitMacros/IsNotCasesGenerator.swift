@@ -30,10 +30,12 @@ public struct IsNotCasesGenerator: MemberMacro {
 		let members = enumDecl.memberBlock.members
 		var computedProperties: [DeclSyntax] = []
 		
-		let modifiers = enumDecl.modifiers
-			.map(\.name.text)
-		
-		let modifiersString: String = modifiers.isEmpty ? "" : modifiers.joined(separator: " ") + " "
+		let allModifiers = enumDecl.modifiers.map(\.name.text)
+		let accessControlSet: Set<String> = ["open", "public", "package", "internal", "fileprivate", "private"]
+		let accessModifiers = allModifiers.filter { accessControlSet.contains($0) }
+		let modifiersString: String = accessModifiers.isEmpty
+			? ""
+			: accessModifiers.joined(separator: " ") + " "
 		
 		/// Iterate over each case in the enum
 		for member in members {
