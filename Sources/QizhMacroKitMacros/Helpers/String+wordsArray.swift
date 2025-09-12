@@ -1,5 +1,5 @@
 //
-//  String+camelSnakeConvert.swift
+//  String+wordsArray.swift
 //  QizhKit
 //
 //  Created by Serhii Shevchenko on 30.12.2024.
@@ -9,7 +9,7 @@
 import Foundation
 import RegexBuilder
 
-internal struct Regexes {
+fileprivate struct Regexes {
 	/// Matches individual “words” based on Unicode word boundaries.
 	///
 	/// A word can be:
@@ -69,16 +69,29 @@ extension String {
 			.joined()
 	}
 	
-	/// Splits the string into words (using Unicode word boundaries),
-	/// lowercases each word according to the current locale,
-	/// and joins them with the given separator.
-	///
-	/// - Parameter separator: The string to insert between each lowercased word.
-	/// - Returns: A string composed of the original words lowercased and joined by `separator`.
+	/// Matches words in any language and any case, lowercases them,
+	/// and joines with provided separator
+	/// - Parameter separator: String to join the words with
+	/// - Returns: Lowercased words joined with the separator
 	internal func toLocalizedLowercasedWords(joinedBy separator: String) -> String {
+		self.toWordsArray()
+			.joined(separator: separator)
+	}
+	
+	/// Splits the string into an array of lowercase words
+	/// detected by a Unicode-aware word regex.
+	/// Handles words in any language and case,
+	/// breaking on transitions between character classes.
+	///
+	/// - Example:
+	/// 	```swift
+	///     "someCamelCase123".toWordsArray() // ["some", "camel", "case", "123"]
+	///     ```
+	///
+	/// - Returns: An array of localized lowercased words extracted from the string.
+	internal func toWordsArray() -> [String] {
 		self.matches(of: Regexes.words)
 			.map(\.localizedLowercase)
-			.joined(separator: separator)
 	}
 	
 	/// Returns a `snake_case` representation of this string.
