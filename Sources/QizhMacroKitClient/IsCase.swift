@@ -19,3 +19,16 @@ fileprivate enum Status {
 	case `default`(Bool)
 	case `is`(_ value: Bool)
 }
+
+@IsCase
+fileprivate enum CaseError: Error {
+	case somethingWentWrong
+}
+
+@IsCase
+fileprivate enum AnotherCaseError: Error {
+	case somethingWentWrong(String)
+}
+
+@IsCase
+fileprivate enum Empty { }
