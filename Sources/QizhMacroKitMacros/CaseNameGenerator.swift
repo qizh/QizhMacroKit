@@ -41,10 +41,12 @@ public struct CaseNameGenerator: MemberMacro {
 			return []
 		}
 		
-		let modifiers = enumDecl.modifiers.map(\.name.text)
-		let modifiersString: String = modifiers.isEmpty 
+		let allModifiers = enumDecl.modifiers.map(\.name.text)
+		let accessControlSet: Set<String> = ["open", "public", "package", "internal", "fileprivate", "private"]
+		let accessModifiers = allModifiers.filter { accessControlSet.contains($0) }
+		let modifiersString: String = accessModifiers.isEmpty
 			? ""
-			: modifiers.joined(separator: " ") + " "
+			: accessModifiers.joined(separator: " ") + " "
 		
 		var resultString: String = "\(modifiersString)var caseName: String { switch self {"
 		
@@ -64,3 +66,4 @@ public struct CaseNameGenerator: MemberMacro {
 		return ["\(raw: resultString)"]
 	}
 }
+
