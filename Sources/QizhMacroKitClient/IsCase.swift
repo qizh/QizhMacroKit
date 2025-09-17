@@ -5,7 +5,7 @@
 //  Created by Serhii Shevchenko on 08.10.2024.
 //
 
-import Foundation
+import SwiftUI
 import QizhMacroKit
 
 @IsCase
@@ -32,3 +32,9 @@ fileprivate enum AnotherCaseError: Error {
 
 @IsCase
 fileprivate enum Empty { }
+
+@IsCase
+@MainActor public enum StringFormat: String, Codable, Hashable, Equatable, Sendable, CaseIterable {
+	case ipv4, ipv6, uuid, date, time, email, duration, hostname, dateTime = "date-time"
+	case `default`
+}

@@ -28,6 +28,9 @@ public struct IsCasesGenerator: MemberMacro {
 		}
 		
 		let members = enumDecl.memberBlock.members
+        // Collect all enum case elements across all case declarations
+        let caseDecls = members.compactMap { $0.decl.as(EnumCaseDeclSyntax.self) }
+        let allCaseElements: [EnumCaseElementSyntax] = caseDecls.flatMap { Array($0.elements) }
 		var additions: [DeclSyntax] = []
 		var caseNames: [String] = []
 		
@@ -38,7 +41,7 @@ public struct IsCasesGenerator: MemberMacro {
 			? ""
 			: accessModifiers.joined(separator: " ") + " "
 		
-		if members.isEmpty {
+		if allCaseElements.isEmpty {
 			context.diagnose(
 				Diagnostic.warning(
 					node: Syntax(node),
@@ -47,26 +50,9 @@ public struct IsCasesGenerator: MemberMacro {
 				)
 			)
 			return []
-		} else if members.count == 1 {
-			guard let element = members.first?.decl.as(EnumCaseDeclSyntax.self)?.elements.first else {
-				context.diagnose(
-					Diagnostic.error(
-						node: Syntax(node),
-						message: "The only member of enum is not a case, so `@IsCase` can NOT be applied.",
-						id: .noEnumCases
-						/*
-						fixIts: [
-							FixIt(
-								message: FixMessage(message: "Add a case to the enum", id: .addCase),
-								changes: []
-							)
-						]
-						*/
-					)
-				)
-				return []
-			}
-			
+		} else if allCaseElements.count == 1 {
+			// Exactly one case element across the entire enum
+			let element = allCaseElements[0]
 			let caseName = element.name.text.withBackticksTrimmed
 			caseNames.append(caseName)
 			let escapedCaseName = caseName.escapedSwiftIdentifier
@@ -80,29 +66,23 @@ public struct IsCasesGenerator: MemberMacro {
 				"""
 			additions.append(property)
 		} else {
-			/// Iterate over each case in the enum
-			for member in members {
-				guard let enumCaseDecl = member.decl.as(EnumCaseDeclSyntax.self) else {
-					continue
-				}
+			// Iterate over each collected case element
+			for element in allCaseElements {
+				let caseName = element.name.text.withBackticksTrimmed
+				caseNames.append(caseName)
+				let escapedCaseName = caseName.escapedSwiftIdentifier
+				let propertyName = "is\(caseName.prefix(1).uppercased())\(caseName.dropFirst())"
 				
-				for element in enumCaseDecl.elements {
-					let caseName = element.name.text.withBackticksTrimmed
-					caseNames.append(caseName)
-					let escapedCaseName = caseName.escapedSwiftIdentifier
-					let propertyName = "is\(caseName.prefix(1).uppercased())\(caseName.dropFirst())"
-					
-					let property: DeclSyntax = """
-						/// Returns `true` if `self` is `.\(raw: escapedCaseName)`.
-						\(raw: modifiersString)var \(raw: propertyName): Bool {
-							switch self {
-							case .\(raw: escapedCaseName): true
-							default: false
-							}
+				let property: DeclSyntax = """
+					/// Returns `true` if `self` is `.\(raw: escapedCaseName)`.
+					\(raw: modifiersString)var \(raw: propertyName): Bool {
+						switch self {
+						case .\(raw: escapedCaseName): true
+						default: false
 						}
-						"""
-					additions.append(property)
-				}
+					}
+					"""
+				additions.append(property)
 			}
 		}
 		
@@ -157,3 +137,4 @@ public struct IsCasesGenerator: MemberMacro {
 		return additions
 	}
 }
+
