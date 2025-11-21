@@ -30,7 +30,7 @@ fileprivate enum AnotherCaseError: Error {
 	case somethingWentWrong(String)
 }
 
-@IsCase
+@IsCase /// Suppose to produce a warning
 fileprivate enum Empty { }
 
 @IsCase
