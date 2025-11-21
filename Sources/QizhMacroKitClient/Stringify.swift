@@ -21,10 +21,10 @@ func shouldBeNoErrors() {
 	_ = #dictionarify(connectionID != nil)
 }
 
-/*
-#if ENABLE_DEBUG_DYLIB
+#if DEBUG && canImport(Playgrounds) && swift(>=6.2)
+/// `DEBUG`-`Playground`-only Swift v`6.2`+ code here
 
-import Playgrounds
+import Playgrounds /// Conditionally compiled
 
 #Playground("stringify") {
 	let isConnected = false
@@ -35,17 +35,16 @@ import Playgrounds
 	_ = #stringify(connectionID != nil)
 }
 
-#Playground("stringify and calculate") {
+#Playground("dictionarify") {
 	let isConnected = false
 	let connectionID: Int? = 123
 	
-	_ = #stringifyAndCalculate(isConnected)
-	_ = #stringifyAndCalculate(isConnected && connectionID != nil)
-	_ = #stringifyAndCalculate(connectionID != nil)
+	_ = #dictionarify(isConnected)
+	_ = #dictionarify(isConnected && connectionID != nil)
+	_ = #dictionarify(connectionID != nil)
 	
-	let id = #stringifyAndCalculate(connectionID).value
+	let id = #dictionarify(connectionID).value
 	_ = #stringify(id)
 }
 
 #endif
-*/
