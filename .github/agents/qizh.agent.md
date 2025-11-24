@@ -45,6 +45,6 @@ author_name: Serhii
 
 ## When finished
 - Build all targets in the workspace/project/package with Swift 6.2+ compiler to make sure there are no errors
-- Run all tests to make sure none of them fails
+- Run all tests to make sure none of them fail
 - Generate and post a report
 - Update the PR description with the results
