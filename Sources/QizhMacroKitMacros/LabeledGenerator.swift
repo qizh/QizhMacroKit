@@ -11,6 +11,16 @@ import SwiftCompilerPlugin
 import SwiftDiagnostics
 
 /// Expression macro that transforms an array literal into an ``OrderedDictionary`` whose keys are derived from the element expressions.
+///
+/// For simple variable references (e.g., `firstName`), the key is the variable name.
+/// For complex expressions (e.g., `user.name`, `getValue()`), the key is the full expression text.
+///
+/// Examples:
+/// ```swift
+/// let firstName = "John"
+/// #Labeled([firstName])  // ["firstName": firstName]
+/// #Labeled([user.name])  // ["user.name": user.name]
+/// ```
 public struct LabeledGenerator: ExpressionMacro {
 	public static func expansion(
 		of node: some FreestandingMacroExpansionSyntax,
@@ -36,9 +46,10 @@ public struct LabeledGenerator: ExpressionMacro {
 			let expr = element.expression.description.trimmingCharacters(in: .whitespacesAndNewlines)
 			let key: String
 			if let declRef = element.expression.as(DeclReferenceExprSyntax.self) {
+				// Simple variable reference: use variable name as key
 				key = declRef.baseName.text.withBackticksTrimmed
 			} else {
-				// For non-identifier expressions, use the expression itself as the key
+				// Complex expression (property access, function call, etc.): use expression text as key
 				key = expr
 			}
 			entries.append("\"\(key)\": \(expr)")
