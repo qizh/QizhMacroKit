@@ -22,7 +22,8 @@ func shouldBeNoErrors() {
 }
 
 #if DEBUG && canImport(Playgrounds) && swift(>=6.2)
-/// `DEBUG`-`Playground`-only Swift v`6.2`+ code here
+/// Code below is only compiled in DEBUG builds, with Swift v6.2+, and when the Playgrounds module is available.
+/// If Playgrounds is not available, this block will be silently excluded even in DEBUG builds with Swift 6.2+.
 
 import Playgrounds /// Conditionally compiled
 
