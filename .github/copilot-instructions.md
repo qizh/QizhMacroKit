@@ -33,7 +33,8 @@ QizhMacroKit/
 - `@CaseValue` - Generates value extraction for enum cases
 - `@IsCases` - Generates boolean `is<CaseName>` properties for enum cases
 - `@IsNotCases` - Generates boolean `isNot<CaseName>` properties for enum cases
-- `@Stringify` - Converts expressions to their string representation
+- `#stringify` - Converts expressions to their string representation
+- `#dictionarify` - Returns a dictionary element containing the value and its source text as a key-value pair
 
 ## Build and Test Commands
 
