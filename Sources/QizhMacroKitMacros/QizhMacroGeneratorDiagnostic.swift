@@ -5,6 +5,7 @@
 //  Created by Serhii Shevchenko on 08.10.2024.
 //
 
+import SwiftSyntax
 import SwiftDiagnostics
 
 fileprivate let qizhDomainName = "net.qizh"
@@ -223,3 +224,4 @@ extension Diagnostic {
 		)
 	}
 }
+

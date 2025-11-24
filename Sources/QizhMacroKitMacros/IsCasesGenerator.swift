@@ -5,6 +5,11 @@
 //  Created by Serhii Shevchenko on 08.10.2024.
 //
 
+import SwiftSyntax
+import SwiftDiagnostics
+import SwiftSyntaxMacros
+import SwiftSyntaxBuilder
+
 public struct IsCasesGenerator: MemberMacro {
 	public static func expansion(
 		of node: AttributeSyntax,

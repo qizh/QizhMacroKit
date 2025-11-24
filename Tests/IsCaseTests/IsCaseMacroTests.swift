@@ -1,14 +1,9 @@
+#if os(macOS)
 import Testing
-import QizhMacroKit
-#if canImport(SwiftSyntaxMacros)
 import SwiftSyntaxMacros
-#endif
-#if canImport(SwiftSyntaxMacrosTestSupport)
 import SwiftSyntaxMacrosTestSupport
-#endif
-#if canImport(QizhMacroKitMacros)
-import QizhMacroKitMacros
-#endif
+@testable import QizhMacroKit
+@testable import QizhMacroKitMacros
 
 /// Tests for the `IsCase` macro.
 @Suite("IsCase macro")
@@ -86,7 +81,6 @@ struct IsCaseMacroTests {
 		#expect(token.isAmong(.class, .struct))
 	}
 
-#if canImport(SwiftSyntaxMacros) && canImport(SwiftSyntaxMacrosTestSupport) && canImport(QizhMacroKitMacros)
 	/// Verifies generated members respect access modifiers.
 	@Test("Respects access modifiers")
 	func respectsAccessModifiers() {
@@ -242,6 +236,5 @@ struct IsCaseMacroTests {
 			macros: ["IsCase": QizhMacroKitMacros.IsCasesGenerator.self]
 		)
 	}
-#endif
 }
-
+#endif

@@ -10,13 +10,20 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-
+  build-and-test:
     runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build
-      run: swift build -v
-    - name: Run tests
-      run: swift test -v
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Swift toolchain
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.2"
+
+      - name: Build
+        run: swift build --configuration debug
+
+      - name: Run tests
+        run: swift test --parallel --verbose

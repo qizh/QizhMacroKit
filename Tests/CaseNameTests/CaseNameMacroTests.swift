@@ -1,5 +1,7 @@
+#if os(macOS)
 import Testing
-import QizhMacroKit
+@testable import QizhMacroKit
+@testable import QizhMacroKitMacros
 
 /// Tests for the `CaseName` macro.
 @Suite("CaseName macro")
@@ -12,4 +14,4 @@ struct CaseNameMacroTests {
 		#expect(state.caseName == "running")
 	}
 }
-
+#endif

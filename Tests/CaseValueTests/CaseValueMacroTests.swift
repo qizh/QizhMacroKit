@@ -1,5 +1,7 @@
+#if os(macOS)
 import Testing
-import QizhMacroKit
+@testable import QizhMacroKit
+@testable import QizhMacroKitMacros
 
 /// Tests for the `CaseValue` macro.
 @Suite("CaseValue macro")
@@ -16,4 +18,4 @@ struct CaseValueMacroTests {
 		#expect(word.textString == "hi")
 	}
 }
-
+#endif

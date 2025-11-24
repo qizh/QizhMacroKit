@@ -1,9 +1,10 @@
+#if os(macOS)
 import Testing
-import QizhMacroKit
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import SwiftSyntaxMacrosGenericTestSupport
-import QizhMacroKitMacros
+@testable import QizhMacroKit
+@testable import QizhMacroKitMacros
 
 /// Tests for compile-time and runtime `stringify` and `dictionarify` macros.
 @Suite("Stringify macros")
@@ -13,7 +14,13 @@ struct StringifyMacroTests {
 		"stringify": StringifyGenerator.self,
 		"dictionarify": DictionarifyGenerator.self,
 	]
-
+	/*
+	let testMacros: [String: MacroSpec] = [
+		"stringify": MacroSpec(type: StringifyGenerator.self),
+		"dictionarify": MacroSpec(type: DictionarifyGenerator.self),
+	]
+	*/
+	
 	// MARK: - Compile-time tests
 
 	/// Ensures `stringify` yields only the source text.
@@ -83,4 +90,4 @@ struct StringifyMacroTests {
 		#expect(pair.value == 6)
 	}
 }
-
+#endif
