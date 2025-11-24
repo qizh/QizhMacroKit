@@ -29,7 +29,7 @@ author_name: Serhii
 - Check dependency versions and update them if needed
 
   **IMPORTANT:**
-  - Never update a dependency to a version which introduces breaking changes for those entities, that are used in the depending repository, without getting a confirmation or a specific task
+  - Never update a dependency to a version which introduces breaking changes for those entities that are used in the depending repository, without getting a confirmation or a specific task
     - Instead: Update to the latest dependency version with no breaking changes in it
   - In case you can auto-update the code to adopt the dependency's breaking change – ask the author for confirmation
     - Otherwise: Create a corresponding Issue for the dependency update adoption when possible and mention it in your report
