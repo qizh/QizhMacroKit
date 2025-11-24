@@ -32,8 +32,8 @@ let package = Package(
 		.package(
 			url: "https://github.com/swiftlang/swift-syntax.git",
 			/// Was `"602.0.0" ..< "700.0.0"`
-			// .upToNextMajor(from: "602.0.0")
-			exact: "602.0.0"
+			/// Was `exact: "602.0.0"`
+			.upToNextMajor(from: "602.0.0")
 		),
 		// .package(url: "https://github.com/apple/swift-collections.git", .upToNextMajor(from: "1.2.0")),
 		/*
