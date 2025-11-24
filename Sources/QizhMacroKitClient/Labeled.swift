@@ -11,16 +11,15 @@ import QizhMacroKit
 fileprivate func _labeled() {
 	let firstName = "Serhii"
 	let lastName = "Shevchenko"
-	@Labeled let dict = [
+	let dict = #Labeled([
 		firstName,
 		lastName,
-	]
+	])
 	
-	@Labeled
-	let names = [
+	let names = #Labeled([
 		firstName,
 		lastName,
-	]
+	])
 	
 	print("dict: \(dict)")
 	print("names: \(names)")
