@@ -1,0 +1,10 @@
+name: "Copilot Setup Steps"
+
+steps:
+  - name: "Set up Swift toolchain"
+    uses: "swift-actions/setup-swift@v2"
+    with:
+      swift-version: "6.2"
+
+  - name: "Resolve dependencies"
+    run: "swift package resolve"
