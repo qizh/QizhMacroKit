@@ -26,7 +26,7 @@ author_name: Serhii
 - Review code written by others
 - Find & fix potential bugs & issues
 - Suggest improvements
-- Check dependencies versions and update them if needed
+- Check dependency versions and update them if needed
 
   **IMPORTANT:**
   - Never update a dependency to a version which introduces breaking changes for those entities, that are used in the depending repository, without getting a confirmation or a specific task
