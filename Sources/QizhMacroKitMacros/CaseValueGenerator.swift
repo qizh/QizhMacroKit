@@ -5,6 +5,11 @@
 //  Created by Serhii Shevchenko on 31.05.2025.
 //
 
+import SwiftSyntax
+import SwiftDiagnostics
+import SwiftSyntaxMacros
+import SwiftSyntaxBuilder
+
 public struct CaseValueGenerator: MemberMacro {
 	public static func expansion(
 		of node: AttributeSyntax,
@@ -175,3 +180,4 @@ public struct CaseValueGenerator: MemberMacro {
 		return parts.joined(separator: ", ")
 	}
 }
+

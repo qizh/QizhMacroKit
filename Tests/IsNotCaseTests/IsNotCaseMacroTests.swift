@@ -1,5 +1,7 @@
+#if os(macOS)
 import Testing
-import QizhMacroKit
+@testable import QizhMacroKit
+@testable import QizhMacroKitMacros
 
 /// Tests for the `IsNotCase` macro.
 @Suite("IsNotCase macro")
@@ -13,4 +15,4 @@ struct IsNotCaseMacroTests {
 		#expect(dir.isNotRight)
 	}
 }
-
+#endif

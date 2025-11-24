@@ -1,0 +1,29 @@
+{
+  "configurations" : [
+    {
+      "id" : "B26E3B2A-6774-4189-B08F-33961B20A86E",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:",
+      "identifier" : "QizhMacroKit",
+      "name" : "QizhMacroKit"
+    },
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "QizhMacroKitTests",
+        "name" : "QizhMacroKitTests"
+      }
+    }
+  ],
+  "version" : 1
+}

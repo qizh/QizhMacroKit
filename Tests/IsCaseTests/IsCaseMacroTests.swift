@@ -1,8 +1,9 @@
+#if os(macOS)
 import Testing
-import QizhMacroKit
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
-import QizhMacroKitMacros
+@testable import QizhMacroKit
+@testable import QizhMacroKitMacros
 
 /// Tests for the `IsCase` macro.
 @Suite("IsCase macro")
@@ -92,19 +93,16 @@ struct IsCaseMacroTests {
 			#"""
 			public enum PublicStatus {
 				case on
-				/// Returns `true` if `self` is `.on`.
+				/// Always return `true` because `self` has just `.on` case.
 				public var isOn: Bool {
-					switch self {
-					case .on: true
-					default: false
-					}
+					true
 				}
 				/// A parameterless representation of `PublicStatus` cases.
-				public enum Cases: Equatable {
+				public enum Cases: Equatable, CaseIterable {
 					case on
 				}
 				/// A parameterless representation of this case.
-				private var caseValue: Cases {
+				public var parametersErasedCase: Cases {
 					switch self {
 					case .on: .on
 					}
@@ -112,7 +110,7 @@ struct IsCaseMacroTests {
 				/// Returns `true` if `self` matches any case in `cases`.
 				/// - Parameter cases: An array of cases to match against.
 				public func isAmong(_ cases: [Cases]) -> Bool {
-					cases.contains(self.caseValue)
+					cases.contains(self.parametersErasedCase)
 				}
 				/// Returns `true` if `self` matches any of the provided cases.
 				/// - Parameter cases: The cases to match against.
@@ -121,7 +119,7 @@ struct IsCaseMacroTests {
 				}
 			}
 			"""#,
-			macros: ["IsCase": IsCasesGenerator.self]
+			macros: ["IsCase": QizhMacroKitMacros.IsCasesGenerator.self]
 		)
 
 		assertMacroExpansion(
@@ -133,19 +131,16 @@ struct IsCaseMacroTests {
 			#"""
 			enum InternalStatus {
 				case on
-				/// Returns `true` if `self` is `.on`.
+				/// Always return `true` because `self` has just `.on` case.
 				var isOn: Bool {
-					switch self {
-					case .on: true
-					default: false
-					}
+					true
 				}
 				/// A parameterless representation of `InternalStatus` cases.
-				enum Cases: Equatable {
+				enum Cases: Equatable, CaseIterable {
 					case on
 				}
 				/// A parameterless representation of this case.
-				private var caseValue: Cases {
+				var parametersErasedCase: Cases {
 					switch self {
 					case .on: .on
 					}
@@ -153,7 +148,7 @@ struct IsCaseMacroTests {
 				/// Returns `true` if `self` matches any case in `cases`.
 				/// - Parameter cases: An array of cases to match against.
 				func isAmong(_ cases: [Cases]) -> Bool {
-					cases.contains(self.caseValue)
+					cases.contains(self.parametersErasedCase)
 				}
 				/// Returns `true` if `self` matches any of the provided cases.
 				/// - Parameter cases: The cases to match against.
@@ -162,7 +157,7 @@ struct IsCaseMacroTests {
 				}
 			}
 			"""#,
-			macros: ["IsCase": IsCasesGenerator.self]
+			macros: ["IsCase": QizhMacroKitMacros.IsCasesGenerator.self]
 		)
 
 		assertMacroExpansion(
@@ -174,19 +169,16 @@ struct IsCaseMacroTests {
 			#"""
 			fileprivate enum FileprivateStatus {
 				case on
-				/// Returns `true` if `self` is `.on`.
+				/// Always return `true` because `self` has just `.on` case.
 				fileprivate var isOn: Bool {
-					switch self {
-					case .on: true
-					default: false
-					}
+					true
 				}
 				/// A parameterless representation of `FileprivateStatus` cases.
-				fileprivate enum Cases: Equatable {
+				fileprivate enum Cases: Equatable, CaseIterable {
 					case on
 				}
 				/// A parameterless representation of this case.
-				private var caseValue: Cases {
+				fileprivate var parametersErasedCase: Cases {
 					switch self {
 					case .on: .on
 					}
@@ -194,7 +186,7 @@ struct IsCaseMacroTests {
 				/// Returns `true` if `self` matches any case in `cases`.
 				/// - Parameter cases: An array of cases to match against.
 				fileprivate func isAmong(_ cases: [Cases]) -> Bool {
-					cases.contains(self.caseValue)
+					cases.contains(self.parametersErasedCase)
 				}
 				/// Returns `true` if `self` matches any of the provided cases.
 				/// - Parameter cases: The cases to match against.
@@ -203,7 +195,7 @@ struct IsCaseMacroTests {
 				}
 			}
 			"""#,
-			macros: ["IsCase": IsCasesGenerator.self]
+			macros: ["IsCase": QizhMacroKitMacros.IsCasesGenerator.self]
 		)
 
 		assertMacroExpansion(
@@ -215,19 +207,16 @@ struct IsCaseMacroTests {
 			#"""
 			private enum PrivateStatus {
 				case on
-				/// Returns `true` if `self` is `.on`.
+				/// Always return `true` because `self` has just `.on` case.
 				private var isOn: Bool {
-					switch self {
-					case .on: true
-					default: false
-					}
+					true
 				}
 				/// A parameterless representation of `PrivateStatus` cases.
-				private enum Cases: Equatable {
+				private enum Cases: Equatable, CaseIterable {
 					case on
 				}
 				/// A parameterless representation of this case.
-				private var caseValue: Cases {
+				private var parametersErasedCase: Cases {
 					switch self {
 					case .on: .on
 					}
@@ -235,7 +224,7 @@ struct IsCaseMacroTests {
 				/// Returns `true` if `self` matches any case in `cases`.
 				/// - Parameter cases: An array of cases to match against.
 				private func isAmong(_ cases: [Cases]) -> Bool {
-					cases.contains(self.caseValue)
+					cases.contains(self.parametersErasedCase)
 				}
 				/// Returns `true` if `self` matches any of the provided cases.
 				/// - Parameter cases: The cases to match against.
@@ -244,8 +233,8 @@ struct IsCaseMacroTests {
 				}
 			}
 			"""#,
-			macros: ["IsCase": IsCasesGenerator.self]
+			macros: ["IsCase": QizhMacroKitMacros.IsCasesGenerator.self]
 		)
 	}
 }
-
+#endif
