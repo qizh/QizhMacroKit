@@ -1,6 +1,6 @@
 # IsNotCase Macro
 
-> Last Updated: February 6, 2025
+> Last Updated: November 25, 2025
 
 An attached member macro that generates negated boolean properties for checking enum cases.
 

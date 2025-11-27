@@ -157,13 +157,13 @@ print(pair.value)  // 4
 
 Detailed documentation for each component:
 
-### Macros (sorted by date updated)
+### Macros
 
-1. [Stringify Macros](Docs/Stringify.md) — `#stringify` and `#dictionarify` (August 2025)
-2. [CaseValue](Docs/CaseValue.md) — Associated value extraction (May 2025)
-3. [IsNotCase](Docs/IsNotCase.md) — Negated case checking (February 2025)
-4. [CaseName](Docs/CaseName.md) — Case name as string (October 2024)
-5. [IsCase](Docs/IsCase.md) — Boolean case checking (October 2024)
+- [CaseName](Docs/CaseName.md) — Case name as string
+- [CaseValue](Docs/CaseValue.md) — Associated value extraction
+- [IsCase](Docs/IsCase.md) — Boolean case checking
+- [IsNotCase](Docs/IsNotCase.md) — Negated case checking
+- [Stringify Macros](Docs/Stringify.md) — `#stringify` and `#dictionarify`
 
 ### Internal Utilities
 

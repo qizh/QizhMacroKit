@@ -1,6 +1,6 @@
 # CaseName Macro
 
-> Last Updated: October 8, 2024
+> Last Updated: November 25, 2025
 
 An attached member macro that generates a computed property returning the enum case name as a string.
 

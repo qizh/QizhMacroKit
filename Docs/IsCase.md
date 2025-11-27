@@ -1,6 +1,6 @@
 # IsCase Macro
 
-> Last Updated: October 8, 2024
+> Last Updated: November 25, 2025
 
 An attached member macro that generates boolean properties and membership utilities for enum cases.
 

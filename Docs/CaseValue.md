@@ -1,6 +1,6 @@
 # CaseValue Macro
 
-> Last Updated: May 31, 2025
+> Last Updated: November 25, 2025
 
 An attached member macro that generates computed properties to extract associated values from enum cases.
 

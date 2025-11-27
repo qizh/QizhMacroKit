@@ -1,6 +1,6 @@
 # Stringify Macros
 
-> Last Updated: August 22, 2025
+> Last Updated: November 25, 2025
 
 Freestanding expression macros for converting expressions to their string representations.
 

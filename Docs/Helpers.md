@@ -1,6 +1,6 @@
 # String Helper Utilities
 
-> Last Updated: June 16, 2025
+> Last Updated: November 25, 2025
 
 Internal string manipulation utilities used by QizhMacroKit macro generators.
 
@@ -13,7 +13,7 @@ QizhMacroKit includes several internal string extensions that power the macro ge
 ### String Case Conversion
 
 > Source: `String+wordsArray.swift`  
-> Last Updated: December 30, 2024
+> Last Updated: November 25, 2025
 
 Converts strings between different naming conventions:
 
@@ -38,7 +38,7 @@ These conversions use Unicode-aware word boundary detection, supporting:
 ### Swift Keyword Escaping
 
 > Source: `String+swiftKeywordEscaping.swift`  
-> Last Updated: 2024
+> Last Updated: November 25, 2025
 
 Handles Swift reserved keywords in generated identifiers:
 
@@ -71,7 +71,7 @@ The following Swift keywords are recognized:
 ### Backtick Trimming
 
 > Source: `String+trimmingBackticks.swift`  
-> Last Updated: June 16, 2025
+> Last Updated: November 25, 2025
 
 Removes backticks from escaped identifiers:
 
