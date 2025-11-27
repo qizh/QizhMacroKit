@@ -8,7 +8,7 @@ A Swift package providing a collection of powerful macros for enhanced enum hand
 
 ## Overview
 
-QizhMacroKit uses Swift Macros (introduced in Swift 5.9) to generate compile-time code, reducing boilerplate and enhancing enum ergonomics. All macros are powered by SwiftSyntax and execute during compilation with zero runtime overhead.
+QizhMacroKit uses Swift Macros (introduced in Swift 5.9) and requires Swift 6.2+ to generate compile-time code, reducing boilerplate and enhancing enum ergonomics. All macros are powered by SwiftSyntax and execute during compilation with zero runtime overhead.
 
 ## Features
 
