@@ -5,7 +5,7 @@
 //  Created by Serhii Shevchenko on 08.10.2024.
 //
 
-import SwiftUI
+import Foundation
 import QizhMacroKit
 
 @IsCase
