@@ -215,11 +215,3 @@ Contributions are welcome! Please:
 2. Review [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for bugs to fix
 3. Open an issue to discuss significant changes
 4. Submit a PR with tests for new functionality
-
-## License
-
-QizhMacroKit is available under the MIT license.
-
-## Author
-
-**Serhii Shevchenko** — [@qizh](https://github.com/qizh)
