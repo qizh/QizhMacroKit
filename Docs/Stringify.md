@@ -110,7 +110,7 @@ logValue(#dictionarify(count * 2))      // "[count * 2] = 84"
 The `#stringify` macro requires exactly one argument. Calling it without arguments will produce a compile-time error:
 
 ```swift
-// ❌ Compile Error: "Stringify requires one argument"
+// Compile-time error: "Stringify requires one argument"
 let invalid = #stringify()
 ```
 
