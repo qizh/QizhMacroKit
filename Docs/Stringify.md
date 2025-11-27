@@ -59,7 +59,7 @@ public macro dictionarify<T>(_ value: T) -> Dictionary<String, T>.Element
 ```swift
 import QizhMacroKit
 
-let pair = #dictionarify(2 * 3)
+let pair: (key: String, value: Int) = #dictionarify(2 * 3)
 print(pair.key)    // "2 * 3"
 print(pair.value)  // 6
 ```
