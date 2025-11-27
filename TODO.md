@@ -2,7 +2,7 @@
 
 > Last Updated: November 27, 2025
 
-This document outlines planned features, improvements, and tasks for QizhMacroKit.
+This document outlines features, improvements, and tasks for `QizhMacroKit`, **planned by AI**.
 
 ## High Priority
 
