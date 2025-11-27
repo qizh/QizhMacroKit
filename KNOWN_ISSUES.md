@@ -87,33 +87,6 @@ The `escapedSwiftIdentifier` helper recognizes most common Swift keywords, but m
 
 ---
 
-### CaseValue Type Inference
-
-#### Optional Handling
-
-**Status**: By Design  
-**Affected**: `@CaseValue`
-
-When an associated value is already `Optional`, the generated property doesn't double-wrap:
-
-```swift
-@CaseValue
-enum Value {
-    case id(_ id: UInt?)  // Already optional
-}
-
-// Generated: var id: UInt?  (not UInt??)
-```
-
-However, the nil-checking logic may be confusing when the original value can be `nil`:
-
-```swift
-let value = Value.id(nil)
-print(value.id)  // nil - but is it because the case doesn't match, or because the value is nil?
-```
-
----
-
 ### Build Environment
 
 #### SwiftUI Client Example
