@@ -87,30 +87,6 @@ The `escapedSwiftIdentifier` helper recognizes most common Swift keywords, but m
 
 ---
 
-### Build Environment
-
-#### SwiftUI Client Example
-
-**Status**: Environment Limitation  
-**Affected**: `QizhMacroKitClient` target
-
-The client example target includes SwiftUI imports that fail to build on non-Apple platforms (Linux CI environments):
-
-```swift
-// Sources/QizhMacroKitClient/IsCase.swift
-import SwiftUI  // Fails on Linux
-```
-
-This doesn't affect the library functionality—only the example client.
-
-**Workaround**: Build only the `QizhMacroKit` target on non-macOS platforms:
-
-```bash
-swift build --target QizhMacroKit
-```
-
----
-
 ## Reporting Issues
 
 Found a bug or have a feature request? Please [open an issue](https://github.com/qizh/QizhMacroKit/issues/new) with:
