@@ -4,7 +4,7 @@ A Swift package providing a collection of powerful macros for enhanced enum hand
 
 [![Swift 6.2](https://img.shields.io/badge/Swift-6.2-orange.svg)](https://swift.org)
 [![Platforms](https://img.shields.io/badge/Platforms-iOS%2017%20|%20macOS%2014%20|%20Mac%20Catalyst%2014-blue.svg)](https://developer.apple.com)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](#license)
 
 ## Overview
 
@@ -218,7 +218,7 @@ Contributions are welcome! Please:
 
 ## License
 
-QizhMacroKit is available under the MIT license. See the LICENSE file for more info.
+QizhMacroKit is available under the MIT license.
 
 ## Author
 
