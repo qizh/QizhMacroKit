@@ -11,8 +11,8 @@
   "defaultOptions" : {
     "targetForVariableExpansion" : {
       "containerPath" : "container:",
-      "identifier" : "QizhMacroKit",
-      "name" : "QizhMacroKit"
+      "identifier" : "QizhMacroKitTests",
+      "name" : "QizhMacroKitTests"
     },
     "testTimeoutsEnabled" : true
   },
