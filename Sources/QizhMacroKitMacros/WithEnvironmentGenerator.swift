@@ -312,13 +312,38 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
 
 private final class CaptureCollector: SyntaxVisitor {
         var identifiers: [TokenSyntax] = []
+        private var localVariables: Set<String> = []
+
+        override func visit(_ node: VariableDeclSyntax) -> SyntaxVisitorContinueKind {
+                // Collect all local variable names declared in the closure/content
+                for binding in node.bindings {
+                        if let pattern = binding.pattern.as(IdentifierPatternSyntax.self) {
+                                localVariables.insert(pattern.identifier.text)
+                        }
+                }
+                return .visitChildren
+        }
 
         override func visit(_ node: DeclReferenceExprSyntax) -> SyntaxVisitorContinueKind {
+                // Filter out:
+                // - Local variables
+                // - Type names (handled by IdentifierTypeSyntax)
+                // - Enum cases or static members (if part of a MemberAccessExprSyntax)
+                let name = node.baseName.text
+                // Skip if local variable
+                if localVariables.contains(name) {
+                        return .skipChildren
+                }
+                // Skip if part of a member access (likely enum case or static member)
+                if let parent = node.parent, parent.is(MemberAccessExprSyntax.self) {
+                        return .skipChildren
+                }
                 identifiers.append(node.baseName)
                 return .skipChildren
         }
 
         override func visit(_ node: IdentifierTypeSyntax) -> SyntaxVisitorContinueKind {
+                // Skip type names
                 .skipChildren
         }
 }
