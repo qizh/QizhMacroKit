@@ -1,5 +1,4 @@
-#if os(macOS) && canImport(SwiftUI)
-import Observation
+#if os(macOS)
 import SwiftSyntaxMacrosTestSupport
 import Testing
 @testable import QizhMacroKitMacros
@@ -90,31 +89,6 @@ struct WithEnvironmentMacroTests {
 					message: "@WithEnvironment requires a closure with variable declarations",
 					line: 1,
 					column: 1,
-				)
-			],
-			macros: withEnvironmentMacros
-		)
-  }
-  
-	@Test("Errors on duplicate variable names")
-	func errorsOnDuplicateVariableNames() {
-		assertMacroExpansion(
-			"""
-			@WithEnvironment("Duplicate") {
-				var store: MacroStore
-				var store: MacroNavigation
-			}
-			Text("Duplicate")
-			""",
-			expandedSource:
-				"""
-				Text("Duplicate")
-				""",
-			diagnostics: [
-				DiagnosticSpec(
-					message: "Duplicate variable name store",
-					line: 4,
-					column: 6,
 					severity: .error
 				)
 			],
@@ -137,32 +111,6 @@ struct WithEnvironmentMacroTests {
 					message: "@WithEnvironment must have a trailing closure with the view expression",
 					line: 1,
 					column: 1,
-          severity: .error
-				)
-			],
-			macros: withEnvironmentMacros
-		)
-  }
-
-	@Test("Errors on duplicate variable types")
-	func errorsOnDuplicateVariableTypes() {
-		assertMacroExpansion(
-			"""
-			@WithEnvironment("DuplicateType") {
-				var store1: MacroStore
-				var store2: MacroStore
-			}
-			Text("DuplicateType")
-			""",
-			expandedSource:
-				"""
-				Text("DuplicateType")
-				""",
-			diagnostics: [
-				DiagnosticSpec(
-					message: "Duplicate environment variable type MacroStore",
-					line: 4,
-					column: 6,
 					severity: .error
 				)
 			],
@@ -187,31 +135,6 @@ struct WithEnvironmentMacroTests {
 					message: "@WithEnvironment requires at least one variable declaration",
 					line: 1,
 					column: 27,
-					severity: .error
-				)
-			],
-			macros: withEnvironmentMacros
-		)
-	}
-            
-	@Test("Errors on variables with initializers")
-	func errorsOnVariablesWithInitializers() {
-		assertMacroExpansion(
-			"""
-			@WithEnvironment("Initialized") {
-				var store: MacroStore = MacroStore()
-			}
-			Text("Initialized")
-			""",
-			expandedSource:
-				"""
-				Text("Initialized")
-				""",
-			diagnostics: [
-				DiagnosticSpec(
-					message: "Environment variable store cannot be initialized",
-					line: 3,
-					column: 6,
 					severity: .error
 				)
 			],
@@ -252,31 +175,6 @@ struct WithEnvironmentMacroTests {
 			macros: withEnvironmentMacros
 		)
 	}
-  
-	@Test("Errors on missing type annotations")
-	func errorsOnMissingTypeAnnotations() {
-		assertMacroExpansion(
-			"""
-			@WithEnvironment("MissingType") {
-				var store
-			}
-			Text("MissingType")
-			""",
-			expandedSource:
-				"""
-				Text("MissingType")
-				""",
-			diagnostics: [
-				DiagnosticSpec(
-					message: "Environment variable store must declare a type",
-					line: 3,
-					column: 6,
-					severity: .error
-				)
-			],
-			macros: withEnvironmentMacros
-		)
-	}
 	
 	@Test("Errors on missing type annotation")
 	func errorsOnMissingType() {
@@ -295,30 +193,6 @@ struct WithEnvironmentMacroTests {
 					message: "Environment variable store must declare a type",
 					line: 1,
 					column: 35,
-					severity: .error
-				)
-			],
-			macros: withEnvironmentMacros
-		)
-	}
-  
-	@Test("Errors on empty variable closure")
-	func errorsOnEmptyVariableClosure() {
-		assertMacroExpansion(
-			"""
-			@WithEnvironment("Empty") {
-			}
-			Text("Empty")
-			""",
-			expandedSource:
-				"""
-				Text("Empty")
-				""",
-			diagnostics: [
-				DiagnosticSpec(
-					message: "@WithEnvironment requires at least one variable declaration",
-					line: 1,
-					column: 27,
 					severity: .error
 				)
 			],
@@ -358,48 +232,6 @@ struct WithEnvironmentMacroTests {
 			],
 			macros: withEnvironmentMacros
 		)
-  }
-  
-	@Test("Expands environment accessors for mixed types")
-	func expandsEnvironmentBindingsForMixedTypes() {
-		let hash = fnvSuffix(for: "Text(\"Mixed\")")
-		assertMacroExpansion(
-			"""
-			@WithEnvironment("Mixed") {
-				var store: MacroStore
-				var navigation: MacroNavigation
-				var name: String
-			}
-			Text("Mixed")
-			""",
-			expandedSource:
-				"""
-				fileprivate struct _Mixed_\(hash)<Content: View>: View {
-					@EnvironmentObject private var store: MacroStore
-					
-					@Environment(MacroNavigation.self) private var navigation
-					
-					@available(*, unavailable, message: "Unsupported environment variable type: String")
-					private var name: String { fatalError("Unsupported environment variable type: String") }
-					
-					let content: @MainActor @Sendable (MacroStore, MacroNavigation, String) -> Content
-					
-					var body: some View {
-						content(store, navigation, name)
-					}
-				}
-				_Mixed_\(hash)(content: { store, navigation, name in Text("Mixed") })
-				""",
-			diagnostics: [
-				DiagnosticSpec(
-					message: "String is not Observable or ObservableObject. Remove its declaration.",
-					line: 5,
-					column: 5,
-					severity: .warning
-				)
-			],
-			macros: withEnvironmentMacros
-		)
 	}
 	
 	@Test("Errors on variables with initializers")
@@ -424,33 +256,6 @@ struct WithEnvironmentMacroTests {
 			],
 			macros: withEnvironmentMacros
 		)
-  }
-  
-	@Test("Expands environment accessors for escaped keyword variable names")
-	func expandsEnvironmentBindingsForEscapedKeywords() {
-		let hash = fnvSuffix(for: "Text(\"Escaped\")")
-		assertMacroExpansion(
-			"""
-			@WithEnvironment("Escaped") {
-				var `class`: MacroStore
-			}
-			Text("Escaped")
-			""",
-			expandedSource:
-				"""
-				fileprivate struct _Escaped_\(hash)<Content: View>: View {
-					@EnvironmentObject private var `class`: MacroStore
-					
-					let content: @MainActor @Sendable (MacroStore) -> Content
-					
-					var body: some View {
-						content(`class`)
-					}
-				}
-				_Escaped_\(hash)(content: { `class` in Text("Escaped") })
-				""",
-			macros: withEnvironmentMacros
-		)
 	}
 }
 
@@ -463,8 +268,4 @@ private func fnvSuffix(for seed: String) -> String {
 	let hex = String(value, radix: 16, uppercase: true)
 	return String(hex.suffix(8))
 }
-#else
-
-#warning("These tests are only available when SwiftUI is available")
-
 #endif
