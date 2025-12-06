@@ -281,13 +281,7 @@ struct WithEnvironmentMacroTests {
 }
 
 private func fnvSuffix(for seed: String) -> String {
-	var value: UInt64 = 0xcbf29ce484222325
-	for scalar in seed.unicodeScalars {
-		value ^= UInt64(scalar.value)
-		value = value &* 0x100000001b3
-	}
-	let hex = String(value, radix: 16, uppercase: true)
-	return String(hex.suffix(8))
+	seed.fnv1aHashSuffix
 }
 #else
 
