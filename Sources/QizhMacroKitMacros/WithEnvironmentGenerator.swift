@@ -107,7 +107,12 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 		// DeclarationMacro can only return declarations, not expressions.
 		// The caller must instantiate the wrapper struct separately.
 		return [
-			DeclSyntax(stringLiteral: wrapperStruct)
+			DeclSyntax(stringLiteral: wrapperStruct),
+			DeclSyntax(stringLiteral: Self.makeWrapperCall(
+				structName: structName,
+				variableClosure: variableClosure,
+				viewExpression: expression
+			))
 		]
 	}
 	
