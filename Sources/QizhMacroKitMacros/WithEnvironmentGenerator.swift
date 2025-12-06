@@ -300,9 +300,11 @@ private enum WithEnvironmentHelpers {
 		variables: [EnvironmentVariable]
 	) -> String {
 		let environmentLines = variables.map { $0.propertyDeclaration }.joined(separator: "\n\n")
-		let parameters = variables.map(\.type).joined(separator: ", ")
-		let arguments = variables.map(\.accessExpression).joined(separator: ", ")
-		let contentSignature = "@MainActor @Sendable (\(parameters)) -> Content"
+		// Filter out unsupported variables from content signature
+		let supportedVariables = variables.filter { $0.classification != .unsupported }
+		let parameters = supportedVariables.map(\.type).joined(separator: ", ")
+		let arguments = supportedVariables.map(\.accessExpression).joined(separator: ", ")
+		let contentSignature = parameters.isEmpty ? "@MainActor @Sendable () -> Content" : "@MainActor @Sendable (\(parameters)) -> Content"
 		let contentCall = "content(\(arguments))"
 
 		return """
@@ -323,7 +325,9 @@ private enum WithEnvironmentHelpers {
 		variables: [EnvironmentVariable],
 		bodyExpression: ExprSyntax
 	) -> String {
-		let parameterList = variables.map(\.name).joined(separator: ", ")
+		// Filter out unsupported variables from the call
+		let supportedVariables = variables.filter { $0.classification != .unsupported }
+		let parameterList = supportedVariables.map(\.name).joined(separator: ", ")
 		return "\(name)(content: { \(parameterList) in \(bodyExpression) })"
 	}
 }

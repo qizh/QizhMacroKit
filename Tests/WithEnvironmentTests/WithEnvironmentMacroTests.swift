@@ -242,10 +242,10 @@ struct WithEnvironmentMacroTests {
 					@available(*, unavailable, message: "Unsupported type: Int")
 					private var count: Int { fatalError() }
 				
-					let content: @MainActor @Sendable (Int) -> Content
+					let content: @MainActor @Sendable () -> Content
 				
 					var body: some View {
-						content(count)
+						content()
 					}
 				}
 				""",
