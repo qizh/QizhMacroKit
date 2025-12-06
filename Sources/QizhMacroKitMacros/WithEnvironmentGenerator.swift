@@ -236,10 +236,8 @@ private struct EnvironmentVariable {
 		switch classification {
 		case .environmentObject:
 			"@EnvironmentObject private var \(name): \(type)"
-		case .environment:
+		case .environment, .defaultEnvironment:
 			"@Environment(\(type).self) private var \(name)"
-		case .unsupported:
-			"@available(*, unavailable, message: \"Unsupported environment variable type: \(type)\")\nprivate var \(name): \(type) { fatalError(\"Unsupported environment variable type: \(type)\") }"
 		}
 	}
 

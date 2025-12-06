@@ -1,4 +1,4 @@
-#if os(macOS)
+#if os(macOS) && canImport(SwiftUI)
 import SwiftSyntaxMacrosTestSupport
 import Testing
 @testable import QizhMacroKitMacros
@@ -55,7 +55,7 @@ struct WithEnvironmentMacroTests {
 					let content: @MainActor @Sendable (Int) -> Content
 
 					var body: some View {
-						content(count)
+						content(navigation)
 					}
 				}
 				_Unsupported_\(hash)(content: { count in { Text("Unsupported") } })
@@ -268,4 +268,6 @@ private func fnvSuffix(for seed: String) -> String {
 	let hex = String(value, radix: 16, uppercase: true)
 	return String(hex.suffix(8))
 }
+#else
+#warning("These tests are available only when SwiftUI is available")
 #endif
