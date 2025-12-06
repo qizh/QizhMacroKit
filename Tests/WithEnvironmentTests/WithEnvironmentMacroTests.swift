@@ -274,5 +274,35 @@ struct WithEnvironmentMacroTests {
                         indentationWidth: .tab
                 )
         }
+
+        @Test("Expands with custom struct name")
+        func expandsWithCustomName() {
+                let source = #"""
+                #WithEnvironment("MyEnvView", {
+                        var store: DemoStoreObservableObject
+                }) {
+                        Text("Hello")
+                }
+                """#
+                let seed = "{\n        var store: DemoStoreObservableObject\n}" + "{\n    Text(\"Hello\")\n}"
+                let suffix = deterministicSuffix(for: seed)
+                let expected = "{\n" +
+                        "\tstruct _MyEnvView_\(suffix): View {\n" +
+                        "\t\t@EnvironmentObject private var store: DemoStoreObservableObject\n" +
+                        "\t\tvar body: some View {\n" +
+                        "\t\t\tText(\"Hello\")\n" +
+                        "\t\t}\n" +
+                        "\t}\n" +
+                        "\n" +
+                        "\treturn _MyEnvView_\(suffix)()\n" +
+                        "}()"
+
+                assertMacroExpansion(
+                        source,
+                        expandedSource: expected,
+                        macros: macros,
+                        indentationWidth: .tab
+                )
+        }
 }
 #endif
