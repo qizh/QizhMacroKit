@@ -25,12 +25,12 @@ class Bar {
 	}
 }
 
-struct ViewUsingWithEnvironment: View {
+struct ViewUsingApplyEnvironment: View {
 	let int = 1
 	let str = "2"
 	
     var body: some View {
-		#WithEnvironment {
+		#ApplyEnvironment {
 			@EnvironmentObject var foo: Foo
 			@Environment(Bar.self) var bar
 		} {

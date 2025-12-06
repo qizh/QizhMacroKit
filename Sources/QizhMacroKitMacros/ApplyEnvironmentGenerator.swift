@@ -1,5 +1,5 @@
 //
-//  WithEnvironmentGenerator.swift
+//  ApplyEnvironmentGenerator.swift
 //  QizhMacroKit
 //
 //  Created by ChatGPT on 2024-10-xx.
@@ -12,7 +12,7 @@ import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 import RegexBuilder
 
-public struct WithEnvironmentGenerator: ExpressionMacro {
+public struct ApplyEnvironmentGenerator: ExpressionMacro {
 	private struct EnvironmentVariable {
 		let name: TokenSyntax
 		let type: TypeSyntax
@@ -44,8 +44,8 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
 			context.diagnose(
 				.error(
 					node: Syntax(node),
-					message: "#WithEnvironment expects at least a variables declaration closure and a content closure.",
-					id: "withEnvironment.missingArguments"
+					message: "#ApplyEnvironment expects at least a variables declaration closure and a content closure.",
+					id: "applyEnvironment.missingArguments"
 				)
 			)
 			return "()" as ExprSyntax
@@ -68,7 +68,7 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
 				.error(
 					node: Syntax(node),
 					message: "Environment declaration closure must be a valid closure expression.",
-					id: "withEnvironment.invalidEnvironmentClosure"
+					id: "applyEnvironment.invalidEnvironmentClosure"
 				)
 			)
 			return "()" as ExprSyntax
@@ -88,7 +88,7 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
 				.error(
 					node: Syntax(node),
 					message: "Content argument must be a closure returning some View.",
-					id: "withEnvironment.invalidContentClosure"
+					id: "applyEnvironment.invalidContentClosure"
 				)
 			)
 			return "()" as ExprSyntax
@@ -100,7 +100,7 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
 				.error(
 					node: Syntax(envClosure),
 					message: "Provide at least one environment variable declaration.",
-					id: "withEnvironment.emptyVariables"
+					id: "applyEnvironment.emptyVariables"
 				)
 			)
 			return "()" as ExprSyntax
@@ -144,7 +144,7 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
 						.error(
 							node: Syntax(initializer),
 							message: "Environment variables must not be initialized.",
-							id: "withEnvironment.noInitializer"
+							id: "applyEnvironment.noInitializer"
 						)
 					)
 					continue
@@ -157,7 +157,7 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
 						.error(
 							node: Syntax(binding),
 							message: "Environment variable declarations must include a name and a type.",
-							id: "withEnvironment.invalidVariable"
+							id: "applyEnvironment.invalidVariable"
 						)
 					)
 					continue
@@ -169,7 +169,7 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
 						.error(
 							node: Syntax(pattern.identifier),
 							message: "Duplicate environment variable name \(nameText).",
-							id: "withEnvironment.duplicateName"
+							id: "applyEnvironment.duplicateName"
 						)
 					)
 					continue
@@ -181,7 +181,7 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
 						.error(
 							node: Syntax(type),
 							message: "Duplicate environment variable type \(typeText).",
-							id: "withEnvironment.duplicateType"
+							id: "applyEnvironment.duplicateType"
 						)
 					)
 					continue
@@ -193,7 +193,7 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
 						.warning(
 							node: Syntax(type),
 							message: "Type \(typeText) does not conform to ObservableObject or Observable.",
-							id: "withEnvironment.unsupportedType"
+							id: "applyEnvironment.unsupportedType"
 						)
 					)
 				}
@@ -234,7 +234,7 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
 	
 	private static func makeStructName(prefix: String?, seed: String) -> String {
 		let suffix = deterministicSuffix(for: seed)
-		let sanitized = prefix?.replacing(/[^A-Za-z0-9]/, with: "_") ?? "WithEnvironment"
+		let sanitized = prefix?.replacing(/[^A-Za-z0-9]/, with: "_") ?? "ApplyEnvironment"
 		return "_\(sanitized)_\(suffix)"
 	}
 	

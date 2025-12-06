@@ -13,6 +13,6 @@ struct QizhMacroKitPlugin: CompilerPlugin {
 		CaseValueGenerator.self,
 		StringifyGenerator.self,
 		DictionarifyGenerator.self,
-		WithEnvironmentGenerator.self,
+		ApplyEnvironmentGenerator.self,
 	]
 }

@@ -19,19 +19,19 @@ private func deterministicSuffix(for seed: String) -> String {
 	}
 }
 
-/// Tests for the `WithEnvironment` macro covering validation and expansion.
-@Suite("WithEnvironment macro 1")
-struct WithEnvironmentMacroTests {
+/// Tests for the `ApplyEnvironment` macro covering validation and expansion.
+@Suite("ApplyEnvironment macro 1")
+struct ApplyEnvironmentMacroTests {
 	/// Macro implementations under test.
 	let macros: [String: any Macro.Type] = [
-		"WithEnvironment": WithEnvironmentGenerator.self,
+		"ApplyEnvironment": ApplyEnvironmentGenerator.self,
 	]
 	
 	@Test("Expands view content with environment variables")
 	func expandsViewContent() {
 		let source = #"""
 			let title = "Hello"
-			#WithEnvironment({
+			#ApplyEnvironment({
 				var store: DemoStoreObservableObject
 				var nav: DemoNavigationObservable
 			}) {
@@ -48,7 +48,7 @@ struct WithEnvironmentMacroTests {
 		let expected = """
 			let title = "Hello"
 			{
-				struct _WithEnvironment_\(suffix)<Capture0>: View {
+				struct _ApplyEnvironment_\(suffix)<Capture0>: View {
 					let title: Capture0
 					@EnvironmentObject private var store: DemoStoreObservableObject
 					@Environment(DemoNavigationObservable.self) private var nav
@@ -60,7 +60,7 @@ struct WithEnvironmentMacroTests {
 					}
 				}
 				
-				return _WithEnvironment_\(suffix)(title: title)
+				return _ApplyEnvironment_\(suffix)(title: title)
 			}()
 			"""
 		
@@ -76,7 +76,7 @@ struct WithEnvironmentMacroTests {
 	func duplicateNames() {
 		assertMacroExpansion(
 			#"""
-			#WithEnvironment({
+			#ApplyEnvironment({
 				var store: DemoStoreObservableObject
 				var store: DemoStoreObservableObject
 			}) {
@@ -84,7 +84,7 @@ struct WithEnvironmentMacroTests {
 			}
 			"""#,
 			expandedSource: #"""
-			#WithEnvironment({
+			#ApplyEnvironment({
 				var store: DemoStoreObservableObject
 				var store: DemoStoreObservableObject
 			}) {
@@ -105,19 +105,19 @@ struct WithEnvironmentMacroTests {
 	}
 }
 
-/// Tests for the `WithEnvironment` macro covering validation and expansion.
-@Suite("WithEnvironment macro 2")
-struct WithEnvironmentMacroTests2 {
+/// Tests for the `ApplyEnvironment` macro covering validation and expansion.
+@Suite("ApplyEnvironment macro 2")
+struct ApplyEnvironmentMacroTests2 {
 	/// Macro implementations under test.
 	let macros: [String: any Macro.Type] = [
-		"WithEnvironment": WithEnvironmentGenerator.self,
+		"ApplyEnvironment": ApplyEnvironmentGenerator.self,
 	]
 	
 	@Test("Expands view content with environment variables")
 	func expandsViewContent() {
 		let source = #"""
 			let title = "Hello"
-			#WithEnvironment({
+			#ApplyEnvironment({
 				var store: DemoStoreObservableObject
 				var nav: DemoNavigationObservable
 			}) {
@@ -142,7 +142,7 @@ struct WithEnvironmentMacroTests2 {
 		let expected = "let title = \"Hello\"\n" +
 			"""
 			{
-				struct _WithEnvironment_\(suffix)<Capture0>: View {
+				struct _ApplyEnvironment_\(suffix)<Capture0>: View {
 					let title: Capture0
 					@EnvironmentObject private var store: DemoStoreObservableObject
 					@Environment(DemoNavigationObservable.self) private var nav
@@ -154,7 +154,7 @@ struct WithEnvironmentMacroTests2 {
 					}
 				}
 				
-				return _WithEnvironment_\(suffix)(title: title)
+				return _ApplyEnvironment_\(suffix)(title: title)
 			}()
 			"""
 		
@@ -170,7 +170,7 @@ struct WithEnvironmentMacroTests2 {
 	func expandsViewContent2() {
 		let source = #"""
 			let title = "Hello"
-			#WithEnvironment({
+			#ApplyEnvironment({
 				var store: DemoStoreObservableObject
 				var nav: DemoNavigationObservable
 			}) {
@@ -185,7 +185,7 @@ struct WithEnvironmentMacroTests2 {
 		let expected = """
 			let title = "Hello"
 			{
-				struct _WithEnvironment_\(suffix)<Capture0>: View {
+				struct _ApplyEnvironment_\(suffix)<Capture0>: View {
 					let title: Capture0
 					@EnvironmentObject private var store: DemoStoreObservableObject
 					@Environment(DemoNavigationObservable.self) private var nav
@@ -197,7 +197,7 @@ struct WithEnvironmentMacroTests2 {
 					}
 				}
 
-				return _WithEnvironment_\(suffix)(title: title)
+				return _ApplyEnvironment_\(suffix)(title: title)
 			}()
 			"""
 		
@@ -213,14 +213,14 @@ struct WithEnvironmentMacroTests2 {
 	func initializerUsage() {
 		assertMacroExpansion(
 		#"""
-		#WithEnvironment({
+		#ApplyEnvironment({
 			var store: DemoStoreObservableObject = .init()
 		}) {
 			EmptyView()
 		}
 		"""#,
 		expandedSource: #"""
-		#WithEnvironment({
+		#ApplyEnvironment({
 			var store: DemoStoreObservableObject = .init()
 		}) {
 			EmptyView()
@@ -245,7 +245,7 @@ struct WithEnvironmentMacroTests2 {
 		let suffix = deterministicSuffix(for: seed)
 		assertMacroExpansion(
 			#"""
-			#WithEnvironment({
+			#ApplyEnvironment({
 				var settings: SomeCustomType
 			}) {
 				EmptyView()
@@ -253,14 +253,14 @@ struct WithEnvironmentMacroTests2 {
 			"""#,
 			expandedSource: """
 			{
-				struct _WithEnvironment_\(suffix): View {
+				struct _ApplyEnvironment_\(suffix): View {
 					@Environment(SomeCustomType.self) private var settings
 					var body: some View {
 						EmptyView()
 					}
 				}
 				
-				return _WithEnvironment_\(suffix)()
+				return _ApplyEnvironment_\(suffix)()
 			}()
 			""",
 			diagnostics: [
@@ -280,14 +280,14 @@ struct WithEnvironmentMacroTests2 {
 	func initializerUsage1() {
 		assertMacroExpansion(
 			#"""
-			#WithEnvironment({
+			#ApplyEnvironment({
 				var store: DemoStoreObservableObject = .init()
 			}) {
 				EmptyView()
 			}
 			"""#,
 			expandedSource: #"""
-			#WithEnvironment({
+			#ApplyEnvironment({
 				var store: DemoStoreObservableObject
 				var store: DemoStoreObservableObject
 			}) {
@@ -311,14 +311,14 @@ struct WithEnvironmentMacroTests2 {
 	func initializerUsage2() {
 		assertMacroExpansion(
 			#"""
-			#WithEnvironment({
+			#ApplyEnvironment({
 				var store: DemoStoreObservableObject = .init()
 			}) {
 				EmptyView()
 			}
 			"""#,
 			expandedSource: #"""
-			#WithEnvironment({
+			#ApplyEnvironment({
 				var store: DemoStoreObservableObject = .init()
 			}) {
 				EmptyView()
@@ -341,14 +341,14 @@ struct WithEnvironmentMacroTests2 {
 	func initializerUsage3() {
 		assertMacroExpansion(
 			#"""
-			#WithEnvironment({
+			#ApplyEnvironment({
 				var store: DemoStoreObservableObject = .init()
 			}) {
 				EmptyView()
 			}
 			"""#,
 			expandedSource: #"""
-			#WithEnvironment({
+			#ApplyEnvironment({
 				var store: DemoStoreObservableObject = .init()
 			}) {
 				EmptyView()
@@ -371,14 +371,14 @@ struct WithEnvironmentMacroTests2 {
 	func missingArguments() {
 		assertMacroExpansion(
 			#"""
-			#WithEnvironment()
+			#ApplyEnvironment()
 			"""#,
 			expandedSource: #"""
 			()
 			"""#,
 			diagnostics: [
 				.init(
-					message: "#WithEnvironment expects at least a variables declaration closure and a content closure.",
+					message: "#ApplyEnvironment expects at least a variables declaration closure and a content closure.",
 					line: 1,
 					column: 1,
 					severity: .error
@@ -392,7 +392,7 @@ struct WithEnvironmentMacroTests2 {
 	@Test("Expands with custom struct name")
 	func expandsWithCustomName() {
 		let source = #"""
-			#WithEnvironment("MyEnvView", {
+			#ApplyEnvironment("MyEnvView", {
 				var store: DemoStoreObservableObject
 			}) {
 				Text("Hello")
