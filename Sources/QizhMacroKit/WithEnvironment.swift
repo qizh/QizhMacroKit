@@ -5,32 +5,44 @@
 //  Created by Qizh in December 2025.
 //
 
-/// Generates a helper wrapper view that injects environment values into the wrapped view expression.
+/// Generates a helper wrapper struct that injects environment values into a view.
 ///
-/// The macro accepts an optional name and a closure with plain variable declarations. Each declaration
-/// describes an environment dependency that will be fetched inside the generated wrapper view and passed
-/// into the wrapped expression.
+/// This macro produces a fileprivate struct conforming to `View` that fetches
+/// environment dependencies and passes them to a content closure.
 ///
-/// Note: This macro uses the experimental CodeItemMacros feature which is not available
-/// in production Swift compilers. The macro declaration is commented out but the generator
-/// implementation and tests remain for future use when the feature becomes available.
-///
-/// Usage (when CodeItemMacros is available):
+/// ## Usage
 /// ```swift
-/// #WithEnvironment("MyView", { var store: MyStore; var nav: MyNavigation }) {
-///     Text("Hello")
+/// #WithEnvironment("MyView", { var store: MyStore; var nav: MyNavigation })
+/// ```
+///
+/// This generates:
+/// ```swift
+/// fileprivate struct _MyView_<hash><Content: View>: View {
+///     @EnvironmentObject private var store: MyStore
+///     @Environment(MyNavigation.self) private var nav
+///     let content: @MainActor @Sendable (MyStore, MyNavigation) -> Content
+///     var body: some View { content(store, nav) }
 /// }
 /// ```
-
-@freestanding(codeItem, names: arbitrary)
-public macro WithEnvironmentItem(
-	_ name: StringLiteralType? = "GeneratedEnvironmentItem",
-	_ declarations: () -> Void
-) = #externalMacro(module: "QizhMacroKitMacros", type: "WithEnvironmentGenerator")
-
 @freestanding(declaration, names: arbitrary)
 public macro WithEnvironment(
-	_ name: StringLiteralType? = "GeneratedEnvironment",
-	_ declarations: () -> Void,
-	_ content: some View
-) = #externalMacro(module: "QizhMacroKitMacros", type: "WithEnvironmentGenerator")
+	_ name: StringLiteralType? = nil,
+	_ declarations: () -> Void
+) = #externalMacro(module: "QizhMacroKitMacros", type: "WithEnvironmentDeclarationGenerator")
+
+// MARK: - Experimental CodeItem Macro
+// The following macro uses the experimental CodeItemMacros feature which is not available
+// in production Swift compilers. It remains commented out for future use.
+//
+// Usage (when CodeItemMacros is available):
+// ```swift
+// #WithEnvironmentItem("MyView", { var store: MyStore; var nav: MyNavigation }) {
+//     Text("Hello")
+// }
+// ```
+//
+// @freestanding(codeItem, names: arbitrary)
+// public macro WithEnvironmentItem(
+// 	_ name: StringLiteralType? = nil,
+// 	_ declarations: () -> Void
+// ) = #externalMacro(module: "QizhMacroKitMacros", type: "WithEnvironmentGenerator")

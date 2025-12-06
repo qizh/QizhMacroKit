@@ -3,14 +3,117 @@ import SwiftSyntaxMacrosTestSupport
 import Testing
 @testable import QizhMacroKitMacros
 
-private let withEnvironmentMacros: [String: Macro.Type] = [
+// CodeItem macro (experimental) - generates struct + call expression
+private let withEnvironmentCodeItemMacros: [String: Macro.Type] = [
 	"WithEnvironment": WithEnvironmentGenerator.self
+]
+
+// Declaration macro (production) - generates only struct
+private let withEnvironmentDeclarationMacros: [String: Macro.Type] = [
+	"WithEnvironment": WithEnvironmentDeclarationGenerator.self
 ]
 
 @Suite("WithEnvironment macro")
 struct WithEnvironmentMacroTests {
-	@Test("Expands environment accessors for observable types")
-	func expandsEnvironmentBindings() {
+	
+	// MARK: - Declaration Macro Tests (Production)
+	
+	@Test("Declaration macro expands to wrapper struct")
+	func declarationMacroExpandsToStruct() {
+		assertMacroExpansion(
+			"""
+			#WithEnvironment("Sample", { var store: MacroStore; var navigation: MacroNavigation })
+			""",
+			expandedSource:
+				"""
+				fileprivate struct _Sample<Content: View>: View {
+					@EnvironmentObject private var store: MacroStore
+				
+					@Environment(MacroNavigation.self) private var navigation
+				
+					let content: @MainActor @Sendable (MacroStore, MacroNavigation) -> Content
+				
+					var body: some View {
+						content(store, navigation)
+					}
+				}
+				""",
+			macros: withEnvironmentDeclarationMacros
+		)
+	}
+	
+	@Test("Declaration macro with trailing closure")
+	func declarationMacroWithTrailingClosure() {
+		assertMacroExpansion(
+			"""
+			#WithEnvironment("Sample") {
+				var store: MacroStore
+			}
+			""",
+			expandedSource:
+				"""
+				fileprivate struct _Sample<Content: View>: View {
+					@EnvironmentObject private var store: MacroStore
+				
+					let content: @MainActor @Sendable (MacroStore) -> Content
+				
+					var body: some View {
+						content(store)
+					}
+				}
+				""",
+			macros: withEnvironmentDeclarationMacros
+		)
+	}
+	
+	@Test("Declaration macro errors on missing closure")
+	func declarationMacroErrorsOnMissingClosure() {
+		assertMacroExpansion(
+			"""
+			#WithEnvironment("MissingClosure")
+			""",
+			expandedSource:
+				"""
+
+				""",
+			diagnostics: [
+				DiagnosticSpec(
+					message: "#WithEnvironment requires a closure with variable declarations",
+					line: 1,
+					column: 1,
+					severity: .error
+				)
+			],
+			macros: withEnvironmentDeclarationMacros
+		)
+	}
+	
+	@Test("Declaration macro errors on empty variables")
+	func declarationMacroErrorsOnEmptyVariables() {
+		assertMacroExpansion(
+			"""
+			#WithEnvironment("Empty", { })
+			""",
+			expandedSource:
+				"""
+
+				""",
+			diagnostics: [
+				DiagnosticSpec(
+					message: "#WithEnvironment requires at least one variable declaration",
+					line: 1,
+					column: 27,
+					severity: .error
+				)
+			],
+			macros: withEnvironmentDeclarationMacros
+		)
+	}
+	
+	// MARK: - CodeItem Macro Tests (Experimental)
+	
+	@Test("CodeItem macro expands environment accessors for observable types")
+	func codeItemMacroExpandsEnvironmentBindings() {
 		let hash = fnvSuffix(for: "{ Text(\"Hello\") }")
 		assertMacroExpansion(
 			"""
@@ -33,71 +136,12 @@ struct WithEnvironmentMacroTests {
 				}
 				_Sample_\(hash)(content: { store, navigation in { Text("Hello") } })
 				""",
-			macros: withEnvironmentMacros
+			macros: withEnvironmentCodeItemMacros
 		)
 	}
 	
-	@Test("Warns about unsupported environment type")
-	func warnsOnUnsupportedType() {
-		let hash = fnvSuffix(for: "{ Text(\"Unsupported\") }")
-		assertMacroExpansion(
-			"""
-			#WithEnvironment("Unsupported", { var count: Int }) {
-				Text("Unsupported")
-			}
-			""",
-			expandedSource:
-				"""
-				fileprivate struct _Unsupported_\(hash)<Content: View>: View {
-					@available(*, unavailable, message: "Unsupported environment variable type: Int")
-					private var count: Int { fatalError("Unsupported environment variable type: Int") }
-
-					let content: @MainActor @Sendable (Int) -> Content
-
-					var body: some View {
-						content(navigation)
-					}
-				}
-				_Unsupported_\(hash)(content: { count in { Text("Unsupported") } })
-				""",
-			diagnostics: [
-				DiagnosticSpec(
-					message: "Int is not Observable or ObservableObject. Remove its declaration.",
-					line: 1,
-					column: 34,
-					severity: .warning
-				)
-			],
-			macros: withEnvironmentMacros
-		)
-	}
-	
-	@Test("Errors when missing closure argument")
-	func errorsOnMissingClosure() {
-		assertMacroExpansion(
-			"""
-			#WithEnvironment("MissingClosure") {
-				Text("Hello")
-			}
-			""",
-			expandedSource:
-				"""
-
-				""",
-			diagnostics: [
-				DiagnosticSpec(
-					message: "@WithEnvironment requires a closure with variable declarations",
-					line: 1,
-					column: 1,
-					severity: .error
-				)
-			],
-			macros: withEnvironmentMacros
-		)
-	}
-	
-	@Test("Errors when missing trailing closure")
-	func errorsOnMissingTrailingClosure() {
+	@Test("CodeItem macro errors on missing trailing closure")
+	func codeItemMacroErrorsOnMissingTrailingClosure() {
 		assertMacroExpansion(
 			"""
 			#WithEnvironment("MissingBody", { var store: MacroStore })
@@ -108,61 +152,27 @@ struct WithEnvironmentMacroTests {
 				""",
 			diagnostics: [
 				DiagnosticSpec(
-					message: "@WithEnvironment must have a trailing closure with the view expression",
+					message: "#WithEnvironment must have a trailing closure with the view expression",
 					line: 1,
 					column: 1,
 					severity: .error
 				)
 			],
-			macros: withEnvironmentMacros
+			macros: withEnvironmentCodeItemMacros
 		)
 	}
 	
-	@Test("Errors when empty variable declarations")
-	func errorsOnEmptyVariables() {
-		assertMacroExpansion(
-			"""
-			#WithEnvironment("Empty", { }) {
-				Text("Hello")
-			}
-			""",
-			expandedSource:
-				"""
-
-				""",
-			diagnostics: [
-				DiagnosticSpec(
-					message: "@WithEnvironment requires at least one variable declaration",
-					line: 1,
-					column: 27,
-					severity: .error
-				)
-			],
-			macros: withEnvironmentMacros
-		)
-	}
+	// MARK: - Shared Error Tests
 	
 	@Test("Errors on duplicate variable names")
 	func errorsOnDuplicateNames() {
-		let hash = fnvSuffix(for: "{ Text(\"Hello\") }")
 		assertMacroExpansion(
 			"""
-			#WithEnvironment("Duplicate", { var store: MacroStore; var store: MacroNavigation }) {
-				Text("Hello")
-			}
+			#WithEnvironment("Duplicate", { var store: MacroStore; var store: MacroNavigation })
 			""",
 			expandedSource:
 				"""
-				fileprivate struct _Duplicate_\(hash)<Content: View>: View {
-					@EnvironmentObject private var store: MacroStore
 
-					let content: @MainActor @Sendable (MacroStore) -> Content
-
-					var body: some View {
-						content(store)
-					}
-				}
-				_Duplicate_\(hash)(content: { store in { Text("Hello") } })
 				""",
 			diagnostics: [
 				DiagnosticSpec(
@@ -172,7 +182,7 @@ struct WithEnvironmentMacroTests {
 					severity: .error
 				)
 			],
-			macros: withEnvironmentMacros
+			macros: withEnvironmentDeclarationMacros
 		)
 	}
 	
@@ -180,9 +190,7 @@ struct WithEnvironmentMacroTests {
 	func errorsOnMissingType() {
 		assertMacroExpansion(
 			"""
-			#WithEnvironment("MissingType", { var store }) {
-				Text("Hello")
-			}
+			#WithEnvironment("MissingType", { var store })
 			""",
 			expandedSource:
 				"""
@@ -196,36 +204,7 @@ struct WithEnvironmentMacroTests {
 					severity: .error
 				)
 			],
-			macros: withEnvironmentMacros
-		)
-	}
-	
-	@Test("Expands environment accessors for mixed types with explicit attributes")
-	func expandsEnvironmentBindingsForMixedTypes() {
-		let hash = fnvSuffix(for: "Text(\"Mixed\")")
-		assertMacroExpansion(
-			"""
-			@WithEnvironment("Mixed") {
-				@EnvironmentObject var store: MacroStore
-				@Environment var navigation: MacroNavigation
-			}
-			""",
-			expandedSource:
-				"""
-				fileprivate struct _Mixed_\(hash)<Content: View>: View {
-					@EnvironmentObject private var store: MacroStore
-					
-					@Environment(MacroNavigation.self) private var navigation
-					
-					let content: @MainActor @Sendable (MacroStore, MacroNavigation) -> Content
-					
-					var body: some View {
-						content(store, navigation)
-					}
-				}
-				_Mixed_\(hash)(content: { store, navigation in Text("Mixed") })
-				""",
-			macros: withEnvironmentMacros
+			macros: withEnvironmentDeclarationMacros
 		)
 	}
 	
@@ -233,9 +212,7 @@ struct WithEnvironmentMacroTests {
 	func errorsOnInitializedVariables() {
 		assertMacroExpansion(
 			"""
-			@WithEnvironment("Escaped") {
-				@EnvironmentObject var `class`: MacroStore
-			}
+			#WithEnvironment("Initialized", { var store: MacroStore = MacroStore() })
 			""",
 			expandedSource:
 				"""
@@ -249,7 +226,38 @@ struct WithEnvironmentMacroTests {
 					severity: .error
 				)
 			],
-			macros: withEnvironmentMacros
+			macros: withEnvironmentDeclarationMacros
+		)
+	}
+	
+	@Test("Warns about unsupported environment type")
+	func warnsOnUnsupportedType() {
+		assertMacroExpansion(
+			"""
+			#WithEnvironment("Unsupported", { var count: Int })
+			""",
+			expandedSource:
+				"""
+				fileprivate struct _Unsupported<Content: View>: View {
+					@available(*, unavailable, message: "Unsupported type: Int")
+					private var count: Int { fatalError() }
+				
+					let content: @MainActor @Sendable (Int) -> Content
+				
+					var body: some View {
+						content(count)
+					}
+				}
+				""",
+			diagnostics: [
+				DiagnosticSpec(
+					message: "Int is not Observable or ObservableObject. Remove its declaration.",
+					line: 1,
+					column: 35,
+					severity: .warning
+				)
+			],
+			macros: withEnvironmentDeclarationMacros
 		)
 	}
 }
