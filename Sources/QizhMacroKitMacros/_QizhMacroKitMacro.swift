@@ -8,11 +8,11 @@
 struct QizhMacroKitPlugin: CompilerPlugin {
 	let providingMacros: [Macro.Type] = [
 		IsCasesGenerator.self,
-                IsNotCasesGenerator.self,
-                CaseNameGenerator.self,
-                CaseValueGenerator.self,
-                StringifyGenerator.self,
-                DictionarifyGenerator.self,
-                WithEnvironmentGenerator.self,
-        ]
+		IsNotCasesGenerator.self,
+		CaseNameGenerator.self,
+		CaseValueGenerator.self,
+		StringifyGenerator.self,
+		DictionarifyGenerator.self,
+		WithEnvironmentGenerator.self,
+	]
 }
