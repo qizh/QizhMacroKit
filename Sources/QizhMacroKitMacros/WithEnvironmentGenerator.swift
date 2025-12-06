@@ -1,8 +1,13 @@
+//
+//  WithEnvironmentGenerator.swift
+//  QizhMacroKit
+//
+//  Created by [Author] on [Date].
+//
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftCompilerPlugin
 import SwiftDiagnostics
-
 public struct WithEnvironmentGenerator: CodeItemMacro {
 	public static func expansion(
 		of node: AttributeSyntax,
