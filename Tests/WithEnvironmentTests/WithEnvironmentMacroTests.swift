@@ -175,41 +175,41 @@ struct WithEnvironmentMacroTests {
                 )
         }
 
-        @Test("Warns on unsupported type")
-        func unsupportedTypeWarning() {
-                let seed = "{\n        var settings: SomeCustomType\n}" + "{\n    EmptyView()\n}"
-                let suffix = deterministicSuffix(for: seed)
-                assertMacroExpansion(
-                        #"""
-                        #WithEnvironment({
-                                var settings: SomeCustomType
-                        }) {
-                                EmptyView()
-                        }
-                        """#,
-                        expandedSource: """
-                        {
-                        \tstruct _WithEnvironment_\(suffix): View {
-                        \t\t@Environment(SomeCustomType.self) private var settings
-                        \t\tvar body: some View {
-                        \t\t\tEmptyView()
-                        \t\t}
-                        \t}
-
-                        \treturn _WithEnvironment_\(suffix)()
-                        }()
-                        """,
-                        diagnostics: [
-                                .init(
-                                        message: "Type SomeCustomType does not conform to ObservableObject or Observable.",
-                                        line: 2,
-                                        column: 23,
-                                        severity: .warning
-                                )
-                        ],
-                        macros: macros,
-                        indentationWidth: .tab
-                )
-        }
+	@Test("Warns on unsupported type")
+	func unsupportedTypeWarning() {
+		let seed = "{\n        var settings: SomeCustomType\n}" + "{\n    EmptyView()\n}"
+		let suffix = deterministicSuffix(for: seed)
+		assertMacroExpansion(
+			#"""
+			#WithEnvironment({
+				var settings: SomeCustomType
+			}) {
+				EmptyView()
+			}
+			"""#,
+		expandedSource: """
+			{
+				struct _WithEnvironment_\(suffix): View {
+					@Environment(SomeCustomType.self) private var settings
+					var body: some View {
+						EmptyView()
+					}
+				}
+				
+				return _WithEnvironment_\(suffix)()
+			}()
+			""",
+			diagnostics: [
+				.init(
+					message: "Type SomeCustomType does not conform to ObservableObject or Observable.",
+					line: 2,
+					column: 23,
+					severity: .warning
+				)
+			],
+			macros: macros,
+			indentationWidth: .tab
+		)
+	}
 }
 #endif
