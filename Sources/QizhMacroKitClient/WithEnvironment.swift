@@ -29,11 +29,12 @@ struct ViewUsingApplyEnvironment: View {
 	let int = 1
 	let str = "2"
 	
-    var body: some View {
+	var body: some View {
 		#ApplyEnvironment {
 			@EnvironmentObject var foo: Foo
 			@Environment(Bar.self) var bar
 		} {
 			Text("Hello, World! \(int) \(str) \(foo.message) \(bar.text)")
 		}
-    }
+	}
+}
