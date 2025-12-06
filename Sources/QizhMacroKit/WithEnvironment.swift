@@ -14,9 +14,10 @@
 public macro ApplyEnvironment<Content>(
 	_ name: StringLiteralType = "ApplyEnvironment",
 	_ variables: () -> Void,
-	_ content: () -> Content
+	to content: () -> Content
 ) -> Content = #externalMacro(module: "QizhMacroKitMacros", type: "ApplyEnvironmentGenerator")
 
+/*
 /// Wraps a view-building expression with generated environment bindings.
 ///
 /// The macro takes a closure that declares environment-bound variables. The following closure should
@@ -24,5 +25,6 @@ public macro ApplyEnvironment<Content>(
 @freestanding(expression)
 public macro ApplyEnvironment<Content>(
 	_ environmentVariables: () -> Void,
-	_ content: () -> Content
+	to content: () -> Content
 ) -> Content = #externalMacro(module: "QizhMacroKitMacros", type: "ApplyEnvironmentGenerator")
+*/

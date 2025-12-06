@@ -31,9 +31,7 @@ let package = Package(
 	dependencies: [
 		.package(
 			url: "https://github.com/swiftlang/swift-syntax.git",
-			/// Was `"602.0.0" ..< "700.0.0"`
-			/// Was `exact: "602.0.0"`
-			.upToNextMajor(from: "602.0.0")
+			from: "602.0.0"
 		),
 		// .package(url: "https://github.com/apple/swift-collections.git", .upToNextMajor(from: "1.2.0")),
 		/*
@@ -53,6 +51,7 @@ let package = Package(
 			dependencies: [
 				.product(name: "SwiftSyntax", package: "swift-syntax"),
 				.product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
+				.product(name: "SwiftSyntaxMacroExpansion", package: "swift-syntax"),
 				.product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
 				.product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
 				.product(name: "SwiftDiagnostics", package: "swift-syntax"),
@@ -118,3 +117,4 @@ let package = Package(
 		.v6,
 	]
 )
+
