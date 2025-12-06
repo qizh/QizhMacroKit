@@ -33,23 +33,23 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
         }
 
         public static func expansion(
-                of node: MacroExpansionExprSyntax,
+                of node: some FreestandingMacroExpansionSyntax,
                 in context: some MacroExpansionContext
         ) throws -> ExprSyntax {
-                let arguments = node.arguments
-                guard arguments.count >= 2 else {
+                let argumentsArray = Array(node.arguments)
+                guard argumentsArray.count >= 2 else {
                         context.diagnose(
                                 .error(
                                         node: Syntax(node),
-                                        message: "@WithEnvironment expects at least a variables declaration closure and a content closure.",
+                                        message: "#WithEnvironment expects at least a variables declaration closure and a content closure.",
                                         id: "withEnvironment.missingArguments"
                                 )
                         )
-                        return ExprSyntax(node)
+                        return "()" as ExprSyntax
                 }
 
                 let providedName: String? = {
-                        guard let first = arguments.first,
+                        guard let first = argumentsArray.first,
                               let literal = first.expression.as(StringLiteralExprSyntax.self),
                               let firstSegment = literal.segments.first?.as(StringSegmentSyntax.self)
                         else { return nil }
@@ -57,25 +57,25 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
                 }()
 
                 let envArgumentIndex = providedName == nil ? 0 : 1
-                guard envArgumentIndex < arguments.count,
-                        let envClosure = arguments[envArgumentIndex].expression.as(ClosureExprSyntax.self)
+                guard envArgumentIndex < argumentsArray.count,
+                        let envClosure = argumentsArray[envArgumentIndex].expression.as(ClosureExprSyntax.self)
                 else {
                         context.diagnose(
                                 .error(
                                         node: Syntax(node),
-                                        message: "Second argument must be an environment declaration closure.",
+                                        message: "Environment declaration closure must be a valid closure expression.",
                                         id: "withEnvironment.invalidEnvironmentClosure"
                                 )
                         )
-                        return ExprSyntax(node)
+                        return "()" as ExprSyntax
                 }
 
                 let contentArgumentIndex = envArgumentIndex + 1
                 let contentClosure: ClosureExprSyntax
                 if let trailing = node.trailingClosure {
                         contentClosure = trailing
-                } else if contentArgumentIndex < arguments.count,
-                          let closure = arguments[contentArgumentIndex].expression.as(ClosureExprSyntax.self) {
+                } else if contentArgumentIndex < argumentsArray.count,
+                          let closure = argumentsArray[contentArgumentIndex].expression.as(ClosureExprSyntax.self) {
                         contentClosure = closure
                 } else {
                         context.diagnose(
@@ -85,7 +85,7 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
                                         id: "withEnvironment.invalidContentClosure"
                                 )
                         )
-                        return ExprSyntax(node)
+                        return "()" as ExprSyntax
                 }
 
                 let variables = parseEnvironmentVariables(from: envClosure, in: context)
@@ -97,7 +97,7 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
                                         id: "withEnvironment.emptyVariables"
                                 )
                         )
-                        return ExprSyntax(node)
+                        return "()" as ExprSyntax
                 }
 
                 let captureNames = collectCaptures(from: Syntax(contentClosure.statements))
@@ -203,7 +203,7 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
         }
 
         private static func collectCaptures(from syntax: some SyntaxProtocol) -> [TokenSyntax] {
-                let collector = CaptureCollector()
+                let collector = CaptureCollector(viewMode: .sourceAccurate)
                 collector.walk(syntax)
                 let unique = Set(collector.identifiers.map { $0.text })
                 return unique.map { TokenSyntax.identifier($0) }.sorted { $0.text < $1.text }
@@ -277,7 +277,8 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
                 if genericParameters.isEmpty {
                         structHeader = "struct \(structName): View"
                 } else {
-                        structHeader = "struct \(structName)<\(genericParameters.joined(separator: ", ")>: View"
+                        let generics = genericParameters.joined(separator: ", ")
+                        structHeader = "struct \(structName)<" + generics + ">: View"
                 }
 
                 let typeDefinition = [

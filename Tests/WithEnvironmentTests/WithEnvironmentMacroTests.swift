@@ -43,23 +43,23 @@ struct WithEnvironmentMacroTests {
                 """#
                 let seed = "{\n        var store: DemoStoreObservableObject\n        var nav: DemoNavigationObservable\n}" + "{\n    VStack {\n        Text(title)\n        Text(nav.path)\n    }\n}"
                 let suffix = deterministicSuffix(for: seed)
-                let expected = """
-                let title = "Hello"
+                let expected = "let title = \"Hello\"\n" +
+                """
                 {
-\tstruct _WithEnvironment_\(suffix)<Capture0>: View {
-\t\tlet title: Capture0
-\t\t@EnvironmentObject private var store: DemoStoreObservableObject
-\t\t@Environment(DemoNavigationObservable.self) private var nav
-\t\tvar body: some View {
-\t\t\tVStack {
-\t\t\t\tText(title)
-\t\t\t\tText(nav.path)
-\t\t\t}
-\t\t}
-\t}
+	struct _WithEnvironment_\(suffix)<Capture0>: View {
+		let title: Capture0
+		@EnvironmentObject private var store: DemoStoreObservableObject
+		@Environment(DemoNavigationObservable.self) private var nav
+		var body: some View {
+			VStack {
+				Text(title)
+				Text(nav.path)
+			}
+		}
+	}
 
-\treturn _WithEnvironment_\(suffix)(title: title)
-}()
+	return _WithEnvironment_\(suffix)(title: title)
+                }()
                 """
 
                 assertMacroExpansion(
