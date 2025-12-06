@@ -51,7 +51,7 @@ struct WithEnvironmentMacroTests {
 	
 	@Test("Warns about unsupported environment type")
 	func warnsOnUnsupportedType() {
-		let hash = fnvSuffix(for: "Text(\\\"Unsupported\\\")")
+		let hash = fnvSuffix(for: "Text(\"Unsupported\")")
 		assertMacroExpansion(
 		"""
 		@WithEnvironment("Unsupported") {
