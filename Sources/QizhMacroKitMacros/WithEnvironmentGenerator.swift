@@ -1,3 +1,10 @@
+//
+//  WithEnvironmentGenerator.swift
+//  QizhMacroKit
+//
+//  Created by Serhii Shevchenko in December 2025.
+//
+
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftCompilerPlugin
@@ -19,12 +26,12 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 			}
 			.joined()
 		
-		// Find the closure with variable declarations (can be in arguments or additional trailing closures)
+		/// Find the closure with variable declarations (can be in arguments or additional trailing closures)
 		let variableClosureExpr: ExprSyntax?
 		if arguments.count == 2 {
 			variableClosureExpr = arguments.last?.expression
 		} else if arguments.count == 1 && arguments.first?.expression.as(StringLiteralExprSyntax.self) != nil {
-			// Name provided, closure might be in additional trailing closures
+			/// Name provided, closure might be in additional trailing closures
 			if let closure = node.additionalTrailingClosures.first?.closure {
 				variableClosureExpr = ExprSyntax(closure)
 			} else {
@@ -38,16 +45,16 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 			context.diagnose(.error(
 				node: Syntax(node),
 				message: "@WithEnvironment requires a closure with variable declarations",
-				id: "withEnvironment.missingEnvironmentVariables"
+				id: .custom("withEnvironment.missingEnvironmentVariables")
 			))
 			return []
 		}
 
 		guard let trailingClosure = node.trailingClosure else {
 			context.diagnose(.error(
-				node: Syntax(node),
-				message: "@WithEnvironment must have a trailing closure with the view expression",
-				id: "withEnvironment.invalidAttachment"
+				node: Syntax(codeItem),
+				message: "@WithEnvironment must be attached to a SwiftUI view expression",
+				id: .custom("withEnvironment.invalidAttachment")
 			))
 			return []
 		}
@@ -57,12 +64,12 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 			context.diagnose(.error(
 				node: Syntax(variableClosure),
 				message: "@WithEnvironment requires at least one variable declaration",
-				id: "withEnvironment.missingVariables"
+				id: .custom("withEnvironment.missingVariables")
 			))
 			return []
 		}
 		
-		// Get the content from the trailing closure
+		/// Get the content from the trailing closure
 		let expression = ExprSyntax(trailingClosure)
 
 		let structName = Self.makeStructName(from: providedName, seed: expression.description)
@@ -100,12 +107,12 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 					continue
 				}
 
-				let name = pattern.identifier.text
+				let name = pattern.identifier.text.withBackticksTrimmed
 				if seenNames.contains(name) {
 					context.diagnose(.error(
 						node: Syntax(pattern),
 						message: "Duplicate variable name \(name)",
-						id: "withEnvironment.duplicateName"
+						id: .custom("withEnvironment.duplicateName")
 					))
 					continue
 				}
@@ -114,7 +121,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 					context.diagnose(.error(
 						node: Syntax(binding),
 						message: "Environment variable \(name) must declare a type",
-						id: "withEnvironment.missingType"
+						id: .custom("withEnvironment.missingType")
 					))
 					continue
 				}
@@ -124,7 +131,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 					context.diagnose(.error(
 						node: Syntax(binding),
 						message: "Duplicate environment variable type \(typeText)",
-						id: "withEnvironment.duplicateType"
+						id: .custom("withEnvironment.duplicateType")
 					))
 					continue
 				}
@@ -133,7 +140,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 					context.diagnose(.error(
 						node: Syntax(binding),
 						message: "Environment variable \(name) cannot be initialized",
-						id: "withEnvironment.initialized"
+						id: .custom("withEnvironment.initialized")
 					))
 					continue
 				}
@@ -143,7 +150,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 					context.diagnose(.warning(
 						node: Syntax(binding),
 						message: "\(typeText) is not Observable or ObservableObject. Remove its declaration.",
-						id: "withEnvironment.unsupportedType"
+						id: .custom("withEnvironment.unsupportedType")
 					))
 				}
 
@@ -189,16 +196,16 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 		let contentCall = "content(\(arguments))"
 
 		return """
-fileprivate struct \(name)<Content: View>: View {
-\t\(environmentLines)
-
-\tlet content: \(contentSignature)
-
-\tvar body: some View {
-\t\t\(contentCall)
-\t}
-}
-"""
+			fileprivate struct \(name)<Content: View>: View {
+				\(environmentLines)
+				
+				let content: \(contentSignature)
+				
+				var body: some View {
+					\(contentCall)
+				}
+			}
+			"""
 	}
 
 	private static func makeWrapperCall(
