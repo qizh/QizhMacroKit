@@ -9,8 +9,6 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftCompilerPlugin
 import SwiftDiagnostics
-import SwiftUI
-import Observation
 
 public struct WithEnvironmentGenerator: CodeItemMacro {
 	public static func expansion(
@@ -88,13 +86,16 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 	) -> [EnvironmentVariable] {
 		var seenNames = Set<String>()
 		var seenTypes = Set<String>()
-    var variables: [EnvironmentVariable] = []
+		var variables: [EnvironmentVariable] = []
 
 		for statement in closure.statements {
 			guard let variableDecl = statement.item.as(VariableDeclSyntax.self) else {
 				continue
 			}
-			
+
+			// Check for @EnvironmentObject or @Environment attributes on the variable declaration
+			let classification = Self.classifyFromAttributes(variableDecl.attributes)
+
 			for binding in variableDecl.bindings {
 				guard let pattern = binding.pattern.as(IdentifierPatternSyntax.self) else {
 					continue
@@ -144,19 +145,16 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 						)
 					)
 					continue
-				}        
-        
-				let classification = EnvironmentClassification(typeText: typeText)
-				if classification == .unsupported {
-					context.diagnose(
-						.warning(
-							node: Syntax(binding),
-							message: "\(typeText) is not Observable or ObservableObject. Remove its declaration.",
-							id: "withEnvironment.unsupportedType"
-						)
-					)
 				}
-        
+
+				if classification == .defaultEnvironment {
+					context.diagnose(.warning(
+						node: Syntax(binding),
+						message: "\(typeText) requires @EnvironmentObject or @Environment attribute. Defaulting to @Environment.",
+						id: .custom("withEnvironment.missingAttribute")
+					))
+				}
+
 				variables.append(EnvironmentVariable(name: name, type: typeText, classification: classification))
 				seenNames.insert(name)
 				seenTypes.insert(typeText)
@@ -165,7 +163,22 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 		
 		return variables
 	}
-	
+
+	private static func classifyFromAttributes(_ attributes: AttributeListSyntax) -> EnvironmentClassification {
+		for attribute in attributes {
+			guard let attr = attribute.as(AttributeSyntax.self) else { continue }
+			let attrName = attr.attributeName.description.trimmingCharacters(in: .whitespacesAndNewlines)
+			
+			if attrName == "EnvironmentObject" {
+				return .environmentObject
+			} else if attrName == "Environment" {
+				return .environment
+			}
+		}
+		// No explicit attribute specified; will default to @Environment with a warning
+		return .defaultEnvironment
+	}
+
 	private static func makeStructName(from explicit: String?, seed: String) -> String {
 		let prefix: String
 		if let explicit, !explicit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -230,51 +243,25 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 }
 
 private struct EnvironmentVariable {
-        let name: String
-        let type: String
+	let name: String
+	let type: String
+	let classification: EnvironmentClassification
 
-        var propertyDeclaration: String {
-                """
-                private var \(name)Binding = EnvironmentBindingResolver.binding(for: \(type).self)
+	var propertyDeclaration: String {
+		switch classification {
+		case .environmentObject:
+			"@EnvironmentObject private var \(name): \(type)"
+		case .environment, .defaultEnvironment:
+			"@Environment(\(type).self) private var \(name)"
+		}
+	}
 
-                private var \(name): \(type) { \(name)Binding.value }
-                """.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-
-        var accessExpression: String { name }
+	var accessExpression: String { name }
 }
 
-private enum EnvironmentBindingResolver {
-        static func binding<T: ObservableObject>(for type: T.Type) -> EnvironmentObjectBinding<T> {
-                EnvironmentObjectBinding<T>()
-        }
-
-        static func binding<T: Observable>(for type: T.Type) -> EnvironmentValueBinding<T> {
-                EnvironmentValueBinding<T>()
-        }
-
-        static func binding<T>(for type: T.Type) -> UnsupportedEnvironmentBinding<T> {
-                UnsupportedEnvironmentBinding(type: type)
-        }
-}
-
-private struct EnvironmentObjectBinding<T: ObservableObject> {
-        @EnvironmentObject private var stored: T
-
-        var value: T { stored }
-}
-
-private struct EnvironmentValueBinding<T: Observable> {
-        @Environment(T.self) private var stored: T
-
-        var value: T { stored }
-}
-
-private struct UnsupportedEnvironmentBinding<T> {
-        let type: T.Type
-
-        @available(*, unavailable, message: "Unsupported environment variable type")
-        var value: T {
-                fatalError("Unsupported environment variable type: \(type)")
-        }
+private enum EnvironmentClassification {
+	case environmentObject
+	case environment
+	/// No explicit attribute was specified; defaults to @Environment with a warning
+	case defaultEnvironment
 }
