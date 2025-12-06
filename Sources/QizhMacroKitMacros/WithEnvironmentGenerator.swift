@@ -9,45 +9,81 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftCompilerPlugin
 import SwiftDiagnostics
+import SwiftSyntaxMacros
 
-public struct WithEnvironmentGenerator: CodeItemMacro {
+public struct WithEnvironmentGenerator: DeclarationMacro {
 	public static func expansion(
-		of node: AttributeSyntax,
-		providingCodeItemAt codeItem: some CodeItemSyntax,
+		of node: some FreestandingMacroExpansionSyntax,
 		in context: some MacroExpansionContext
-	) throws -> [CodeBlockItemSyntax] {
-		let arguments = node.arguments?.as(LabeledExprListSyntax.self)
-		let providedName = arguments?.first?.expression.as(StringLiteralExprSyntax.self)?.segments
-			.compactMap { segment in
-				if case .stringSegment(let content)? = segment.as(StringSegmentSyntax.self) {
-					content.content.text
-				} else {
-					nil
-				}
-			}
-			.joined()
+	) throws -> [DeclSyntax] {
+		let arguments = node.arguments
 		
-		let variableClosureExpr = arguments?.count == 2 ? arguments?.last?.expression : arguments?.first?.expression
-		guard let variableClosure = variableClosureExpr?.as(ClosureExprSyntax.self) else {
-			context.diagnose(
-				.error(
-					node: Syntax(node),
-					message: "@WithEnvironment requires a closure with variable declarations",
-					id: "withEnvironment.missingEnvironmentVariables"
-				)
-			)
-			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
+		// Parse the optional name argument
+		var providedName: String? = nil
+		var variableClosureExpr: ExprSyntax? = nil
+		var viewExpression: ExprSyntax? = nil
+		
+		// Arguments can be:
+		// 1. (name, closure, viewExpr)
+		// 2. (closure, viewExpr)
+		let argArray = Array(arguments)
+		
+		for arg in argArray {
+			if let stringLiteral = arg.expression.as(StringLiteralExprSyntax.self) {
+				providedName = stringLiteral.segments.compactMap { segment -> String? in
+					if let stringSegment = segment.as(StringSegmentSyntax.self) {
+						return stringSegment.content.text
+					}
+					return nil
+				}.joined()
+			} else if arg.expression.as(ClosureExprSyntax.self) != nil {
+				variableClosureExpr = arg.expression
+			} else {
+				// Last non-string, non-closure arg is the view expression
+				viewExpression = arg.expression
+			}
 		}
 		
-		guard let expression = codeItem.item.as(ExprSyntax.self) else {
+		// Also check trailing closure
+		if let trailingClosure = node.trailingClosure {
+			if variableClosureExpr == nil {
+				variableClosureExpr = ExprSyntax(trailingClosure)
+			} else {
+				viewExpression = ExprSyntax(trailingClosure)
+			}
+		}
+		
+		// Check additional trailing closures
+		if let additionalClosures = node.additionalTrailingClosures.first {
+			viewExpression = ExprSyntax(additionalClosures.closure)
+		}
+		
+		guard let variableClosure = variableClosureExpr?.as(ClosureExprSyntax.self) else {
 			context.diagnose(
-				.error(
-					node: Syntax(codeItem),
-					message: "@WithEnvironment must be attached to a SwiftUI view expression",
-					id: "withEnvironment.invalidAttachment"
+				Diagnostic(
+					node: Syntax(node),
+					message: QizhMacroGeneratorDiagnostic(
+						message: "#WithEnvironment requires a closure with variable declarations",
+						id: "withEnvironment.missingEnvironmentVariables",
+						severity: .error
+					)
 				)
 			)
-			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
+			return []
+		}
+
+		guard let expression = viewExpression else {
+			context.diagnose(
+				Diagnostic(
+					node: Syntax(node),
+					message: QizhMacroGeneratorDiagnostic(
+						message: "#WithEnvironment requires a view expression",
+						id: "withEnvironment.missingViewExpression",
+						severity: .error
+					)
+				)
+			)
+			return []
 		}
 		
 		let variables = Self.parseVariables(in: variableClosure, context: context)
@@ -68,15 +104,10 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 			variables: variables
 		)
 		
-		let wrapperCall = Self.makeWrapperCall(
-			named: structName,
-			variables: variables,
-			bodyExpression: expression
-		)
-
+		// DeclarationMacro can only return declarations, not expressions.
+		// The caller must instantiate the wrapper struct separately.
 		return [
-			CodeBlockItemSyntax(item: .decl(DeclSyntax(stringLiteral: wrapperStruct))),
-			CodeBlockItemSyntax(item: .expr(ExprSyntax(stringLiteral: wrapperCall)))
+			DeclSyntax(stringLiteral: wrapperStruct)
 		]
 	}
 	
