@@ -45,11 +45,16 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 
 		let variables = Self.parseVariables(in: variableClosure, context: context)
 		guard !variables.isEmpty else {
-			context.diagnose(.error(
-				node: Syntax(variableClosure),
-				message: "@WithEnvironment requires at least one variable declaration",
-				id: "withEnvironment.missingVariables"
-			))
+			context.diagnose(
+				Diagnostic(
+					node: Syntax(variableClosure),
+					message: QizhMacroGeneratorDiagnostic(
+						message: "@WithEnvironment requires at least one variable declaration",
+						id: .custom("withEnvironment.missingVariables"),
+						severity: .error
+					)
+				)
+			)
 			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
 		}
 
