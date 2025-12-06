@@ -29,7 +29,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 			context.diagnose(.error(
 				node: Syntax(node),
 				message: "@WithEnvironment requires a closure with variable declarations",
-				id: "withEnvironment.missingEnvironmentVariables"
+				id: .custom("withEnvironment.missingEnvironmentVariables")
 			))
 			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
 		}
@@ -38,7 +38,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 			context.diagnose(.error(
 				node: Syntax(codeItem),
 				message: "@WithEnvironment must be attached to a SwiftUI view expression",
-				id: "withEnvironment.invalidAttachment"
+				id: .custom("withEnvironment.invalidAttachment")
 			))
 			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
 		}
@@ -48,7 +48,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 			context.diagnose(.error(
 				node: Syntax(variableClosure),
 				message: "@WithEnvironment requires at least one variable declaration",
-				id: "withEnvironment.missingVariables"
+				id: .custom("withEnvironment.missingVariables")
 			))
 			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
 		}
@@ -93,7 +93,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 					context.diagnose(.error(
 						node: Syntax(pattern),
 						message: "Duplicate variable name \(name)",
-						id: "withEnvironment.duplicateName"
+						id: .custom("withEnvironment.duplicateName")
 					))
 					continue
 				}
@@ -102,7 +102,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 					context.diagnose(.error(
 						node: Syntax(binding),
 						message: "Environment variable \(name) must declare a type",
-						id: "withEnvironment.missingType"
+						id: .custom("withEnvironment.missingType")
 					))
 					continue
 				}
@@ -112,7 +112,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 					context.diagnose(.error(
 						node: Syntax(binding),
 						message: "Duplicate environment variable type \(typeText)",
-						id: "withEnvironment.duplicateType"
+						id: .custom("withEnvironment.duplicateType")
 					))
 					continue
 				}
@@ -121,7 +121,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 					context.diagnose(.error(
 						node: Syntax(binding),
 						message: "Environment variable \(name) cannot be initialized",
-						id: "withEnvironment.initialized"
+						id: .custom("withEnvironment.initialized")
 					))
 					continue
 				}
@@ -131,7 +131,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 					context.diagnose(.warning(
 						node: Syntax(binding),
 						message: "\(typeText) is not Observable or ObservableObject. Remove its declaration.",
-						id: "withEnvironment.unsupportedType"
+						id: .custom("withEnvironment.unsupportedType")
 					))
 				}
 
