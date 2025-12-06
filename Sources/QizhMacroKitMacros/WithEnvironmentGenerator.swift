@@ -95,7 +95,7 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 					id: "withEnvironment.missingVariables"
 				)
 			)
-			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
+			return []
 		}
 		
 		let structName = Self.makeStructName(from: providedName, seed: expression.description)
