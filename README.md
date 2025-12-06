@@ -18,6 +18,7 @@ QizhMacroKit uses Swift Macros (introduced in Swift 5.9) and requires Swift 6.2+
 | [`@CaseValue`](Docs/CaseValue.md) | Attached | Generates properties to extract associated values from cases |
 | [`@IsCase`](Docs/IsCase.md) | Attached | Generates `is<CaseName>` boolean properties and membership checking |
 | [`@IsNotCase`](Docs/IsNotCase.md) | Attached | Generates `isNot<CaseName>` boolean properties |
+| [`@WithEnvironment`](Docs/WithEnvironment.md) | Freestanding | Wraps SwiftUI view expressions with generated environment bindings |
 | [`#stringify`](Docs/Stringify.md) | Freestanding | Converts an expression to its source text |
 | [`#dictionarify`](Docs/Stringify.md) | Freestanding | Returns a key-value pair with source text and evaluated value |
 
@@ -163,6 +164,7 @@ Detailed documentation for each component:
 - [CaseValue](Docs/CaseValue.md) — Associated value extraction
 - [IsCase](Docs/IsCase.md) — Boolean case checking
 - [IsNotCase](Docs/IsNotCase.md) — Negated case checking
+- [WithEnvironment](Docs/WithEnvironment.md) — Environment injection wrapper for SwiftUI views
 - [Stringify Macros](Docs/Stringify.md) — `#stringify` and `#dictionarify`
 
 ### Internal Utilities
