@@ -26,40 +26,48 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 				}
 			}
 			.joined()
+		
 		let variableClosureExpr = arguments?.count == 2 ? arguments?.last?.expression : arguments?.first?.expression
 		guard let variableClosure = variableClosureExpr?.as(ClosureExprSyntax.self) else {
-			context.diagnose(.error(
-				node: Syntax(node),
-				message: "@WithEnvironment requires a closure with variable declarations",
-				id: .custom("withEnvironment.missingEnvironmentVariables")
-			))
+			context.diagnose(
+				.error(
+					node: Syntax(node),
+					message: "@WithEnvironment requires a closure with variable declarations",
+					id: "withEnvironment.missingEnvironmentVariables"
+				)
+			)
 			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
 		}
-
+		
 		guard let expression = codeItem.item.as(ExprSyntax.self) else {
-			context.diagnose(.error(
-				node: Syntax(codeItem),
-				message: "@WithEnvironment must be attached to a SwiftUI view expression",
-				id: .custom("withEnvironment.invalidAttachment")
-			))
+			context.diagnose(
+				.error(
+					node: Syntax(codeItem),
+					message: "@WithEnvironment must be attached to a SwiftUI view expression",
+					id: "withEnvironment.invalidAttachment"
+				)
+			)
 			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
 		}
-
+		
 		let variables = Self.parseVariables(in: variableClosure, context: context)
 		guard !variables.isEmpty else {
-			context.diagnose(.error(
-				node: Syntax(variableClosure),
-				message: "@WithEnvironment requires at least one variable declaration",
-				id: .custom("withEnvironment.missingVariables")
-			))
+			context.diagnose(
+				.error(
+					node: Syntax(variableClosure),
+					message: "@WithEnvironment requires at least one variable declaration",
+					id: "withEnvironment.missingVariables"
+				)
+			)
 			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
 		}
-
+		
 		let structName = Self.makeStructName(from: providedName, seed: expression.description)
 		let wrapperStruct = Self.makeWrapperStruct(
 			named: structName,
 			variables: variables
 		)
+		
 		let wrapperCall = Self.makeWrapperCall(
 			named: structName,
 			variables: variables,
@@ -71,7 +79,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 			CodeBlockItemSyntax(item: .expr(ExprSyntax(stringLiteral: wrapperCall)))
 		]
 	}
-
+	
 	private static func parseVariables(
 		in closure: ClosureExprSyntax,
 		context: some MacroExpansionContext
@@ -92,42 +100,50 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 				guard let pattern = binding.pattern.as(IdentifierPatternSyntax.self) else {
 					continue
 				}
-
+				
 				let name = pattern.identifier.text.withBackticksTrimmed
 				if seenNames.contains(name) {
-					context.diagnose(.error(
-						node: Syntax(pattern),
-						message: "Duplicate variable name \(name)",
-						id: .custom("withEnvironment.duplicateName")
-					))
+					context.diagnose(
+						.error(
+							node: Syntax(pattern),
+							message: "Duplicate variable name \(name)",
+							id: "withEnvironment.duplicateName"
+						)
+					)
 					continue
 				}
-
+				
 				guard let type = binding.typeAnnotation?.type else {
-					context.diagnose(.error(
-						node: Syntax(binding),
-						message: "Environment variable \(name) must declare a type",
-						id: .custom("withEnvironment.missingType")
-					))
+					context.diagnose(
+						.error(
+							node: Syntax(binding),
+							message: "Environment variable \(name) must declare a type",
+							id: "withEnvironment.missingType"
+						)
+					)
 					continue
 				}
-
+				
 				let typeText = type.description.trimmingCharacters(in: .whitespacesAndNewlines)
 				if seenTypes.contains(typeText) {
-					context.diagnose(.error(
-						node: Syntax(binding),
-						message: "Duplicate environment variable type \(typeText)",
-						id: .custom("withEnvironment.duplicateType")
-					))
+					context.diagnose(
+						.error(
+							node: Syntax(binding),
+							message: "Duplicate environment variable type \(typeText)",
+							id: "withEnvironment.duplicateType"
+						)
+					)
 					continue
 				}
-
+				
 				if binding.initializer != nil {
-					context.diagnose(.error(
-						node: Syntax(binding),
-						message: "Environment variable \(name) cannot be initialized",
-						id: .custom("withEnvironment.initialized")
-					))
+					context.diagnose(
+						.error(
+							node: Syntax(binding),
+							message: "Environment variable \(name) cannot be initialized",
+							id: "withEnvironment.initialized"
+						)
+					)
 					continue
 				}
 
@@ -144,7 +160,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 				seenTypes.insert(typeText)
 			}
 		}
-
+		
 		return variables
 	}
 
@@ -170,11 +186,11 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 		} else {
 			prefix = "WithEnvironment"
 		}
-
+	
 		let suffix = Self.hash(seed: seed)
 		return "_\(prefix)_\(suffix)"
 	}
-
+	
 	private static func hash(seed: String) -> String {
 		var value: UInt64 = 0xcbf29ce484222325
 		for scalar in seed.unicodeScalars {
@@ -184,17 +200,23 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 		let hex = String(value, radix: 16, uppercase: true)
 		return String(hex.suffix(8))
 	}
-
+	
 	private static func makeWrapperStruct(
 		named name: String,
 		variables: [EnvironmentVariable]
 	) -> String {
-		let environmentLines = variables.map { $0.propertyDeclaration }.joined(separator: "\n\n")
-		let parameters = variables.map(\.type).joined(separator: ", ")
-		let arguments = variables.map(\.accessExpression).joined(separator: ", ")
+		let environmentLines = variables
+			.map { $0.propertyDeclaration }
+			.joined(separator: "\n\n")
+		let parameters = variables
+			.map(\.type)
+			.joined(separator: ", ")
+		let arguments = variables
+			.map(\.accessExpression)
+			.joined(separator: ", ")
 		let contentSignature = "@MainActor @Sendable (\(parameters)) -> Content"
 		let contentCall = "content(\(arguments))"
-
+	
 		return """
 			fileprivate struct \(name)<Content: View>: View {
 				\(environmentLines)
@@ -207,13 +229,15 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 			}
 			"""
 	}
-
+	
 	private static func makeWrapperCall(
 		named name: String,
 		variables: [EnvironmentVariable],
 		bodyExpression: ExprSyntax
 	) -> String {
-		let parameterList = variables.map(\.name).joined(separator: ", ")
+		let parameterList = variables
+			.map(\.name)
+			.joined(separator: ", ")
 		return "\(name)(content: { \(parameterList) in \(bodyExpression) })"
 	}
 }
