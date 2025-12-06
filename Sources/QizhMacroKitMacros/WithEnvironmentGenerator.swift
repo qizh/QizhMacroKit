@@ -88,7 +88,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 					continue
 				}
 
-				let name = pattern.identifier.text
+				let name = pattern.identifier.text.withBackticksTrimmed
 				if seenNames.contains(name) {
 					context.diagnose(.error(
 						node: Syntax(pattern),
