@@ -37,7 +37,9 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
                 in context: some MacroExpansionContext
         ) throws -> ExprSyntax {
                 let argumentsArray = Array(node.arguments)
-                guard argumentsArray.count >= 2 else {
+                let hasTrailingClosure = node.trailingClosure != nil
+                let minimumArgumentCount = hasTrailingClosure ? 1 : 2
+                guard argumentsArray.count >= minimumArgumentCount else {
                         context.diagnose(
                                 .error(
                                         node: Syntax(node),
