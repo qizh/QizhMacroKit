@@ -177,16 +177,16 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 		let contentCall = "content(\(arguments))"
 
 		return """
-fileprivate struct \(name)<Content: View>: View {
-\t\(environmentLines)
-
-\tlet content: \(contentSignature)
-
-\tvar body: some View {
-\t\t\(contentCall)
-\t}
-}
-"""
+			fileprivate struct \(name)<Content: View>: View {
+				\(environmentLines)
+				
+				let content: \(contentSignature)
+				
+				var body: some View {
+					\(contentCall)
+				}
+			}
+			"""
 	}
 
 	private static func makeWrapperCall(
