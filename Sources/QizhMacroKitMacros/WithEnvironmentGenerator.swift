@@ -9,8 +9,6 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftCompilerPlugin
 import SwiftDiagnostics
-import SwiftUI
-import Observation
 
 public struct WithEnvironmentGenerator: CodeItemMacro {
 	public static func expansion(
@@ -80,7 +78,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 	) -> [EnvironmentVariable] {
 		var seenNames = Set<String>()
 		var seenTypes = Set<String>()
-                var variables: [EnvironmentVariable] = []
+		var variables: [EnvironmentVariable] = []
 
 		for statement in closure.statements {
 			guard let variableDecl = statement.item.as(VariableDeclSyntax.self) else {
@@ -128,8 +126,8 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 						id: .custom("withEnvironment.initialized")
 					))
 					continue
-				}        
-        
+				}
+
 				let classification = EnvironmentClassification(typeText: typeText)
 				if classification == .unsupported {
 					context.diagnose(.warning(
@@ -138,7 +136,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 						id: .custom("withEnvironment.unsupportedType")
 					))
 				}
-        
+
 				variables.append(EnvironmentVariable(name: name, type: typeText, classification: classification))
 				seenNames.insert(name)
 				seenTypes.insert(typeText)
@@ -204,51 +202,36 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 }
 
 private struct EnvironmentVariable {
-        let name: String
-        let type: String
+	let name: String
+	let type: String
+	let classification: EnvironmentClassification
 
-        var propertyDeclaration: String {
-                """
-                private var \(name)Binding = EnvironmentBindingResolver.binding(for: \(type).self)
+	var propertyDeclaration: String {
+		switch classification {
+		case .environmentObject:
+			"@EnvironmentObject private var \(name): \(type)"
+		case .environment:
+			"@Environment(\(type).self) private var \(name)"
+		case .unsupported:
+			"@available(*, unavailable, message: \"Unsupported environment variable type: \(type)\")\nprivate var \(name): \(type) { fatalError(\"Unsupported environment variable type: \(type)\") }"
+		}
+	}
 
-                private var \(name): \(type) { \(name)Binding.value }
-                """.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-
-        var accessExpression: String { name }
+	var accessExpression: String { name }
 }
 
-private enum EnvironmentBindingResolver {
-        static func binding<T: ObservableObject>(for type: T.Type) -> EnvironmentObjectBinding<T> {
-                EnvironmentObjectBinding<T>()
-        }
+private enum EnvironmentClassification {
+	case environmentObject
+	case environment
+	case unsupported
 
-        static func binding<T: Observable>(for type: T.Type) -> EnvironmentValueBinding<T> {
-                EnvironmentValueBinding<T>()
-        }
-
-        static func binding<T>(for type: T.Type) -> UnsupportedEnvironmentBinding<T> {
-                UnsupportedEnvironmentBinding(type: type)
-        }
-}
-
-private struct EnvironmentObjectBinding<T: ObservableObject> {
-        @EnvironmentObject private var stored: T
-
-        var value: T { stored }
-}
-
-private struct EnvironmentValueBinding<T: Observable> {
-        @Environment(T.self) private var stored: T
-
-        var value: T { stored }
-}
-
-private struct UnsupportedEnvironmentBinding<T> {
-        let type: T.Type
-
-        @available(*, unavailable, message: "Unsupported environment variable type")
-        var value: T {
-                fatalError("Unsupported environment variable type: \(type)")
-        }
+	init(typeText: String) {
+		if typeText.contains("ObservableObject") {
+			self = .environmentObject
+		} else if typeText.contains("Observable") {
+			self = .environment
+		} else {
+			self = .unsupported
+		}
+	}
 }
