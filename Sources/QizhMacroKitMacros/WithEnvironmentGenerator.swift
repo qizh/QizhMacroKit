@@ -10,10 +10,10 @@ import SwiftSyntaxBuilder
 import SwiftCompilerPlugin
 import SwiftDiagnostics
 
-// MARK: - Declaration Macro (Production)
-/// Generator for `@freestanding(declaration)` - produces only the wrapper struct declaration.
-/// This works in production Swift compilers.
-public struct WithEnvironmentDeclarationGenerator: DeclarationMacro {
+// MARK: - WithEnv Generator (Production)
+/// Generator for `#WithEnv` - `@freestanding(declaration)` macro.
+/// Produces only the wrapper struct declaration. Works in production Swift compilers.
+public struct WithEnvGenerator: DeclarationMacro {
 	public static func expansion(
 		of node: some FreestandingMacroExpansionSyntax,
 		in context: some MacroExpansionContext
@@ -46,8 +46,8 @@ public struct WithEnvironmentDeclarationGenerator: DeclarationMacro {
 				Diagnostic(
 					node: Syntax(node),
 					message: QizhMacroGeneratorDiagnostic(
-						message: "#WithEnvironment requires a closure with variable declarations",
-						id: "withEnvironment.missingEnvironmentVariables",
+						message: "#WithEnv requires a closure with variable declarations",
+						id: "withEnv.missingEnvironmentVariables",
 						severity: .error
 					)
 				)
@@ -55,14 +55,14 @@ public struct WithEnvironmentDeclarationGenerator: DeclarationMacro {
 			return []
 		}
 
-		let variables = WithEnvironmentHelpers.parseVariables(in: variableClosure, context: context)
+		let variables = EnvironmentMacroHelpers.parseVariables(in: variableClosure, context: context)
 		guard !variables.isEmpty else {
 			context.diagnose(
 				Diagnostic(
 					node: Syntax(variableClosure),
 					message: QizhMacroGeneratorDiagnostic(
-						message: "#WithEnvironment requires at least one variable declaration",
-						id: "withEnvironment.missingVariables",
+						message: "#WithEnv requires at least one variable declaration",
+						id: "withEnv.missingVariables",
 						severity: .error
 					)
 				)
@@ -70,8 +70,8 @@ public struct WithEnvironmentDeclarationGenerator: DeclarationMacro {
 			return []
 		}
 
-		let structName = WithEnvironmentHelpers.makeStructName(from: providedName)
-		let wrapperStruct = WithEnvironmentHelpers.makeWrapperStruct(
+		let structName = EnvironmentMacroHelpers.makeStructName(from: providedName)
+		let wrapperStruct = EnvironmentMacroHelpers.makeWrapperStruct(
 			named: structName,
 			variables: variables
 		)
@@ -80,10 +80,11 @@ public struct WithEnvironmentDeclarationGenerator: DeclarationMacro {
 	}
 }
 
-// MARK: - CodeItem Macro (Experimental)
-/// Generator for `@freestanding(codeItem)` - produces both struct declaration and instantiation.
-/// This requires experimental CodeItemMacros feature.
-public struct WithEnvironmentGenerator: CodeItemMacro {
+// MARK: - ProvidingEnvironment Generator (Experimental)
+/// Generator for `#ProvidingEnvironment` - `@freestanding(codeItem)` macro.
+/// Produces both struct declaration and instantiation.
+/// Requires experimental CodeItemMacros feature.
+public struct ProvidingEnvironmentGenerator: CodeItemMacro {
 	public static func expansion(
 		of node: some FreestandingMacroExpansionSyntax,
 		in context: some MacroExpansionContext
@@ -122,8 +123,8 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 				Diagnostic(
 					node: Syntax(node),
 					message: QizhMacroGeneratorDiagnostic(
-						message: "#WithEnvironment requires a closure with variable declarations",
-						id: "withEnvironment.missingEnvironmentVariables",
+						message: "#ProvidingEnvironment requires a closure with variable declarations",
+						id: "providingEnvironment.missingEnvironmentVariables",
 						severity: .error
 					)
 				)
@@ -136,8 +137,8 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 				Diagnostic(
 					node: Syntax(node),
 					message: QizhMacroGeneratorDiagnostic(
-						message: "#WithEnvironment must have a trailing closure with the view expression",
-						id: "withEnvironment.missingViewExpression",
+						message: "#ProvidingEnvironment must have a trailing closure with the view expression",
+						id: "providingEnvironment.missingViewExpression",
 						severity: .error
 					)
 				)
@@ -145,14 +146,14 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 			return []
 		}
 
-		let variables = WithEnvironmentHelpers.parseVariables(in: variableClosure, context: context)
+		let variables = EnvironmentMacroHelpers.parseVariables(in: variableClosure, context: context)
 		guard !variables.isEmpty else {
 			context.diagnose(
 				Diagnostic(
 					node: Syntax(variableClosure),
 					message: QizhMacroGeneratorDiagnostic(
-						message: "#WithEnvironment requires at least one variable declaration",
-						id: "withEnvironment.missingVariables",
+						message: "#ProvidingEnvironment requires at least one variable declaration",
+						id: "providingEnvironment.missingVariables",
 						severity: .error
 					)
 				)
@@ -160,12 +161,12 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 			return []
 		}
 
-		let structName = WithEnvironmentHelpers.makeStructName(from: providedName, seed: expression.description)
-		let wrapperStruct = WithEnvironmentHelpers.makeWrapperStruct(
+		let structName = EnvironmentMacroHelpers.makeStructName(from: providedName, seed: expression.description)
+		let wrapperStruct = EnvironmentMacroHelpers.makeWrapperStruct(
 			named: structName,
 			variables: variables
 		)
-		let wrapperCall = WithEnvironmentHelpers.makeWrapperCall(
+		let wrapperCall = EnvironmentMacroHelpers.makeWrapperCall(
 			named: structName,
 			variables: variables,
 			bodyExpression: expression
@@ -179,7 +180,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 }
 
 // MARK: - Shared Helpers
-private enum WithEnvironmentHelpers {
+private enum EnvironmentMacroHelpers {
 	static func parseVariables(
 		in closure: ClosureExprSyntax,
 		context: some MacroExpansionContext
@@ -205,7 +206,7 @@ private enum WithEnvironmentHelpers {
 							node: Syntax(pattern),
 							message: QizhMacroGeneratorDiagnostic(
 								message: "Duplicate variable name \(name)",
-								id: "withEnvironment.duplicateName",
+								id: "environment.duplicateName",
 								severity: .error
 							)
 						)
@@ -219,7 +220,7 @@ private enum WithEnvironmentHelpers {
 							node: Syntax(binding),
 							message: QizhMacroGeneratorDiagnostic(
 								message: "Environment variable \(name) must declare a type",
-								id: "withEnvironment.missingType",
+								id: "environment.missingType",
 								severity: .error
 							)
 						)
@@ -234,7 +235,7 @@ private enum WithEnvironmentHelpers {
 							node: Syntax(binding),
 							message: QizhMacroGeneratorDiagnostic(
 								message: "Duplicate environment variable type \(typeText)",
-								id: "withEnvironment.duplicateType",
+								id: "environment.duplicateType",
 								severity: .error
 							)
 						)
@@ -248,7 +249,7 @@ private enum WithEnvironmentHelpers {
 							node: Syntax(binding),
 							message: QizhMacroGeneratorDiagnostic(
 								message: "Environment variable \(name) cannot be initialized",
-								id: "withEnvironment.initialized",
+								id: "environment.initialized",
 								severity: .error
 							)
 						)
@@ -263,7 +264,7 @@ private enum WithEnvironmentHelpers {
 							node: Syntax(binding),
 							message: QizhMacroGeneratorDiagnostic(
 								message: "\(typeText) is not Observable or ObservableObject. Remove its declaration.",
-								id: "withEnvironment.unsupportedType",
+								id: "environment.unsupportedType",
 								severity: .warning
 							)
 						)
@@ -284,7 +285,7 @@ private enum WithEnvironmentHelpers {
 		if let explicit, !explicit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
 			prefix = explicit.trimmingCharacters(in: .whitespacesAndNewlines)
 		} else {
-			prefix = "WithEnvironment"
+			prefix = "WithEnv"
 		}
 
 		if let seed {

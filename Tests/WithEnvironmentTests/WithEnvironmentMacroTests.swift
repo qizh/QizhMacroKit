@@ -3,26 +3,26 @@ import SwiftSyntaxMacrosTestSupport
 import Testing
 @testable import QizhMacroKitMacros
 
-// CodeItem macro (experimental) - generates struct + call expression
-private let withEnvironmentCodeItemMacros: [String: Macro.Type] = [
-	"WithEnvironment": WithEnvironmentGenerator.self
+// ProvidingEnvironment macro (experimental) - generates struct + call expression
+private let providingEnvironmentMacros: [String: Macro.Type] = [
+	"ProvidingEnvironment": ProvidingEnvironmentGenerator.self
 ]
 
-// Declaration macro (production) - generates only struct
-private let withEnvironmentDeclarationMacros: [String: Macro.Type] = [
-	"WithEnvironment": WithEnvironmentDeclarationGenerator.self
+// WithEnv macro (production) - generates only struct
+private let withEnvMacros: [String: Macro.Type] = [
+	"WithEnv": WithEnvGenerator.self
 ]
 
-@Suite("WithEnvironment macro")
-struct WithEnvironmentMacroTests {
+@Suite("Environment macros")
+struct EnvironmentMacroTests {
 	
-	// MARK: - Declaration Macro Tests (Production)
+	// MARK: - WithEnv (Production) Tests
 	
-	@Test("Declaration macro expands to wrapper struct")
-	func declarationMacroExpandsToStruct() {
+	@Test("WithEnv expands to wrapper struct")
+	func withEnvExpandsToStruct() {
 		assertMacroExpansion(
 			"""
-			#WithEnvironment("Sample", { var store: MacroStore; var navigation: MacroNavigation })
+			#WithEnv("Sample", { var store: MacroStore; var navigation: MacroNavigation })
 			""",
 			expandedSource:
 				"""
@@ -38,15 +38,15 @@ struct WithEnvironmentMacroTests {
 					}
 				}
 				""",
-			macros: withEnvironmentDeclarationMacros
+			macros: withEnvMacros
 		)
 	}
 	
-	@Test("Declaration macro with trailing closure")
-	func declarationMacroWithTrailingClosure() {
+	@Test("WithEnv with trailing closure")
+	func withEnvWithTrailingClosure() {
 		assertMacroExpansion(
 			"""
-			#WithEnvironment("Sample") {
+			#WithEnv("Sample") {
 				var store: MacroStore
 			}
 			""",
@@ -62,15 +62,15 @@ struct WithEnvironmentMacroTests {
 					}
 				}
 				""",
-			macros: withEnvironmentDeclarationMacros
+			macros: withEnvMacros
 		)
 	}
 	
-	@Test("Declaration macro errors on missing closure")
-	func declarationMacroErrorsOnMissingClosure() {
+	@Test("WithEnv errors on missing closure")
+	func withEnvErrorsOnMissingClosure() {
 		assertMacroExpansion(
 			"""
-			#WithEnvironment("MissingClosure")
+			#WithEnv("MissingClosure")
 			""",
 			expandedSource:
 				"""
@@ -78,21 +78,21 @@ struct WithEnvironmentMacroTests {
 				""",
 			diagnostics: [
 				DiagnosticSpec(
-					message: "#WithEnvironment requires a closure with variable declarations",
+					message: "#WithEnv requires a closure with variable declarations",
 					line: 1,
 					column: 1,
 					severity: .error
 				)
 			],
-			macros: withEnvironmentDeclarationMacros
+			macros: withEnvMacros
 		)
 	}
 	
-	@Test("Declaration macro errors on empty variables")
-	func declarationMacroErrorsOnEmptyVariables() {
+	@Test("WithEnv errors on empty variables")
+	func withEnvErrorsOnEmptyVariables() {
 		assertMacroExpansion(
 			"""
-			#WithEnvironment("Empty", { })
+			#WithEnv("Empty", { })
 			""",
 			expandedSource:
 				"""
@@ -100,24 +100,24 @@ struct WithEnvironmentMacroTests {
 				""",
 			diagnostics: [
 				DiagnosticSpec(
-					message: "#WithEnvironment requires at least one variable declaration",
+					message: "#WithEnv requires at least one variable declaration",
 					line: 1,
-					column: 27,
+					column: 19,
 					severity: .error
 				)
 			],
-			macros: withEnvironmentDeclarationMacros
+			macros: withEnvMacros
 		)
 	}
 	
-	// MARK: - CodeItem Macro Tests (Experimental)
+	// MARK: - ProvidingEnvironment (Experimental) Tests
 	
-	@Test("CodeItem macro expands environment accessors for observable types")
-	func codeItemMacroExpandsEnvironmentBindings() {
+	@Test("ProvidingEnvironment expands with view expression")
+	func providingEnvironmentExpandsWithViewExpression() {
 		let hash = fnvSuffix(for: "{ Text(\"Hello\") }")
 		assertMacroExpansion(
 			"""
-			#WithEnvironment("Sample", { var store: MacroStore; var navigation: MacroNavigation }) {
+			#ProvidingEnvironment("Sample", { var store: MacroStore; var navigation: MacroNavigation }) {
 				Text("Hello")
 			}
 			""",
@@ -136,15 +136,15 @@ struct WithEnvironmentMacroTests {
 				}
 				_Sample_\(hash)(content: { store, navigation in { Text("Hello") } })
 				""",
-			macros: withEnvironmentCodeItemMacros
+			macros: providingEnvironmentMacros
 		)
 	}
 	
-	@Test("CodeItem macro errors on missing trailing closure")
-	func codeItemMacroErrorsOnMissingTrailingClosure() {
+	@Test("ProvidingEnvironment errors on missing trailing closure")
+	func providingEnvironmentErrorsOnMissingTrailingClosure() {
 		assertMacroExpansion(
 			"""
-			#WithEnvironment("MissingBody", { var store: MacroStore })
+			#ProvidingEnvironment("MissingBody", { var store: MacroStore })
 			""",
 			expandedSource:
 				"""
@@ -152,13 +152,13 @@ struct WithEnvironmentMacroTests {
 				""",
 			diagnostics: [
 				DiagnosticSpec(
-					message: "#WithEnvironment must have a trailing closure with the view expression",
+					message: "#ProvidingEnvironment must have a trailing closure with the view expression",
 					line: 1,
 					column: 1,
 					severity: .error
 				)
 			],
-			macros: withEnvironmentCodeItemMacros
+			macros: providingEnvironmentMacros
 		)
 	}
 	
@@ -168,7 +168,7 @@ struct WithEnvironmentMacroTests {
 	func errorsOnDuplicateNames() {
 		assertMacroExpansion(
 			"""
-			#WithEnvironment("Duplicate", { var store: MacroStore; var store: MacroNavigation })
+			#WithEnv("Duplicate", { var store: MacroStore; var store: MacroNavigation })
 			""",
 			expandedSource:
 				"""
@@ -178,11 +178,11 @@ struct WithEnvironmentMacroTests {
 				DiagnosticSpec(
 					message: "Duplicate variable name store",
 					line: 1,
-					column: 56,
+					column: 48,
 					severity: .error
 				)
 			],
-			macros: withEnvironmentDeclarationMacros
+			macros: withEnvMacros
 		)
 	}
 	
@@ -190,7 +190,7 @@ struct WithEnvironmentMacroTests {
 	func errorsOnMissingType() {
 		assertMacroExpansion(
 			"""
-			#WithEnvironment("MissingType", { var store })
+			#WithEnv("MissingType", { var store })
 			""",
 			expandedSource:
 				"""
@@ -200,11 +200,11 @@ struct WithEnvironmentMacroTests {
 				DiagnosticSpec(
 					message: "Environment variable store must declare a type",
 					line: 1,
-					column: 35,
+					column: 27,
 					severity: .error
 				)
 			],
-			macros: withEnvironmentDeclarationMacros
+			macros: withEnvMacros
 		)
 	}
 	
@@ -212,7 +212,7 @@ struct WithEnvironmentMacroTests {
 	func errorsOnInitializedVariables() {
 		assertMacroExpansion(
 			"""
-			#WithEnvironment("Initialized", { var store: MacroStore = MacroStore() })
+			#WithEnv("Initialized", { var store: MacroStore = MacroStore() })
 			""",
 			expandedSource:
 				"""
@@ -222,11 +222,11 @@ struct WithEnvironmentMacroTests {
 				DiagnosticSpec(
 					message: "Environment variable store cannot be initialized",
 					line: 1,
-					column: 35,
+					column: 27,
 					severity: .error
 				)
 			],
-			macros: withEnvironmentDeclarationMacros
+			macros: withEnvMacros
 		)
 	}
 	
@@ -234,7 +234,7 @@ struct WithEnvironmentMacroTests {
 	func warnsOnUnsupportedType() {
 		assertMacroExpansion(
 			"""
-			#WithEnvironment("Unsupported", { var count: Int })
+			#WithEnv("Unsupported", { var count: Int })
 			""",
 			expandedSource:
 				"""
@@ -253,11 +253,11 @@ struct WithEnvironmentMacroTests {
 				DiagnosticSpec(
 					message: "Int is not Observable or ObservableObject. Remove its declaration.",
 					line: 1,
-					column: 35,
+					column: 27,
 					severity: .warning
 				)
 			],
-			macros: withEnvironmentDeclarationMacros
+			macros: withEnvMacros
 		)
 	}
 }
