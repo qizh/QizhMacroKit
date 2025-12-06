@@ -68,7 +68,50 @@ struct WithEnvironmentMacroTests {
                         macros: macros,
                         indentationWidth: .tab
                 )
-        }
+	@Test("Expands view content with environment variables")
+	func expandsViewContent() {
+		let source = #"""
+			let title = "Hello"
+			#WithEnvironment({
+				var store: DemoStoreObservableObject
+				var nav: DemoNavigationObservable
+			}) {
+				VStack {
+					Text(title)
+					Text(nav.path)
+				}
+			}
+			"""#
+		
+		let seed = "{\n        var store: DemoStoreObservableObject\n        var nav: DemoNavigationObservable\n}" + "{\n    VStack {\n        Text(title)\n        Text(nav.path)\n    }\n}"
+		
+		let suffix = deterministicSuffix(for: seed)
+		let expected = """
+			let title = "Hello"
+			{
+				struct _WithEnvironment_\(suffix)<Capture0>: View {
+					let title: Capture0
+					@EnvironmentObject private var store: DemoStoreObservableObject
+					@Environment(DemoNavigationObservable.self) private var nav
+					var body: some View {
+						VStack {
+							Text(title)
+							Text(nav.path)
+						}
+					}
+				}
+				
+				return _WithEnvironment_\(suffix)(title: title)
+			}()
+			"""
+			
+		assertMacroExpansion(
+			source,
+			expandedSource: expected,
+			macros: macros,
+			indentationWidth: .tab
+		)
+	}
 
         @Test("Reports duplicate variable names")
         func duplicateNames() {
