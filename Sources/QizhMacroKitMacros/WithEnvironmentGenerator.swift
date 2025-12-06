@@ -77,7 +77,7 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 				Diagnostic(
 					node: Syntax(node),
 					message: QizhMacroGeneratorDiagnostic(
-						message: "#WithEnvironment requires a view expression",
+						message: "@WithEnvironment requires a view expression",
 						id: "withEnvironment.missingViewExpression",
 						severity: .error
 					)
