@@ -1,46 +1,55 @@
-//
-//  WithEnvironmentGenerator.swift
-//  QizhMacroKit
-//
-//  Created by [Author] on [Date].
-//
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftCompilerPlugin
 import SwiftDiagnostics
+
 public struct WithEnvironmentGenerator: CodeItemMacro {
 	public static func expansion(
-		of node: AttributeSyntax,
-		providingCodeItemAt codeItem: some CodeItemSyntax,
+		of node: some FreestandingMacroExpansionSyntax,
 		in context: some MacroExpansionContext
 	) throws -> [CodeBlockItemSyntax] {
-		let arguments = node.arguments?.as(LabeledExprListSyntax.self)
-		let providedName = arguments?.first?.expression.as(StringLiteralExprSyntax.self)?.segments
+		let arguments = node.arguments
+		let providedName = arguments.first?.expression.as(StringLiteralExprSyntax.self)?.segments
 			.compactMap { segment in
-				if case .stringSegment(let content)? = segment.as(StringSegmentSyntax.self) {
+				if let content = segment.as(StringSegmentSyntax.self) {
 					content.content.text
 				} else {
 					nil
 				}
 			}
 			.joined()
-		let variableClosureExpr = arguments?.count == 2 ? arguments?.last?.expression : arguments?.first?.expression
+		
+		// Find the closure with variable declarations (can be in arguments or additional trailing closures)
+		let variableClosureExpr: ExprSyntax?
+		if arguments.count == 2 {
+			variableClosureExpr = arguments.last?.expression
+		} else if arguments.count == 1 && arguments.first?.expression.as(StringLiteralExprSyntax.self) != nil {
+			// Name provided, closure might be in additional trailing closures
+			if let closure = node.additionalTrailingClosures.first?.closure {
+				variableClosureExpr = ExprSyntax(closure)
+			} else {
+				variableClosureExpr = nil
+			}
+		} else {
+			variableClosureExpr = arguments.first?.expression
+		}
+		
 		guard let variableClosure = variableClosureExpr?.as(ClosureExprSyntax.self) else {
 			context.diagnose(.error(
 				node: Syntax(node),
 				message: "@WithEnvironment requires a closure with variable declarations",
 				id: "withEnvironment.missingEnvironmentVariables"
 			))
-			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
+			return []
 		}
 
-		guard let expression = codeItem.item.as(ExprSyntax.self) else {
+		guard let trailingClosure = node.trailingClosure else {
 			context.diagnose(.error(
-				node: Syntax(codeItem),
-				message: "@WithEnvironment must be attached to a SwiftUI view expression",
+				node: Syntax(node),
+				message: "@WithEnvironment must have a trailing closure with the view expression",
 				id: "withEnvironment.invalidAttachment"
 			))
-			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
+			return []
 		}
 
 		let variables = Self.parseVariables(in: variableClosure, context: context)
@@ -50,8 +59,11 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 				message: "@WithEnvironment requires at least one variable declaration",
 				id: "withEnvironment.missingVariables"
 			))
-			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
+			return []
 		}
+		
+		// Get the content from the trailing closure
+		let expression = ExprSyntax(trailingClosure)
 
 		let structName = Self.makeStructName(from: providedName, seed: expression.description)
 		let wrapperStruct = Self.makeWrapperStruct(
