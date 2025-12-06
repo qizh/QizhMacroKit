@@ -8,49 +8,96 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftCompilerPlugin
 import SwiftDiagnostics
-public struct WithEnvironmentGenerator: CodeItemMacro {
+import SwiftSyntaxMacros
+
+public struct WithEnvironmentGenerator: DeclarationMacro {
 	public static func expansion(
-		of node: AttributeSyntax,
-		providingCodeItemAt codeItem: some CodeItemSyntax,
+		of node: some FreestandingMacroExpansionSyntax,
 		in context: some MacroExpansionContext
-	) throws -> [CodeBlockItemSyntax] {
-		let arguments = node.arguments?.as(LabeledExprListSyntax.self)
-		let providedName = arguments?.first?.expression.as(StringLiteralExprSyntax.self)?.segments
-			.compactMap { segment in
-				if case .stringSegment(let content)? = segment.as(StringSegmentSyntax.self) {
-					content.content.text
-				} else {
-					nil
-				}
+	) throws -> [DeclSyntax] {
+		let arguments = node.arguments
+		
+		// Parse the optional name argument
+		var providedName: String? = nil
+		var variableClosureExpr: ExprSyntax? = nil
+		var viewExpression: ExprSyntax? = nil
+		
+		// Arguments can be:
+		// 1. (name, closure, viewExpr)
+		// 2. (closure, viewExpr)
+		let argArray = Array(arguments)
+		
+		for arg in argArray {
+			if let stringLiteral = arg.expression.as(StringLiteralExprSyntax.self) {
+				providedName = stringLiteral.segments.compactMap { segment -> String? in
+					if let stringSegment = segment.as(StringSegmentSyntax.self) {
+						return stringSegment.content.text
+					}
+					return nil
+				}.joined()
+			} else if arg.expression.as(ClosureExprSyntax.self) != nil {
+				variableClosureExpr = arg.expression
+			} else {
+				// Last non-string, non-closure arg is the view expression
+				viewExpression = arg.expression
 			}
-			.joined()
-		let variableClosureExpr = arguments?.count == 2 ? arguments?.last?.expression : arguments?.first?.expression
+		}
+		
+		// Also check trailing closure
+		if let trailingClosure = node.trailingClosure {
+			if variableClosureExpr == nil {
+				variableClosureExpr = ExprSyntax(trailingClosure)
+			} else {
+				viewExpression = ExprSyntax(trailingClosure)
+			}
+		}
+		
+		// Check additional trailing closures
+		if let additionalClosures = node.additionalTrailingClosures.first {
+			viewExpression = ExprSyntax(additionalClosures.closure)
+		}
+		
 		guard let variableClosure = variableClosureExpr?.as(ClosureExprSyntax.self) else {
-			context.diagnose(.error(
-				node: Syntax(node),
-				message: "@WithEnvironment requires a closure with variable declarations",
-				id: "withEnvironment.missingEnvironmentVariables"
-			))
-			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
+			context.diagnose(
+				Diagnostic(
+					node: Syntax(node),
+					message: QizhMacroGeneratorDiagnostic(
+						message: "#WithEnvironment requires a closure with variable declarations",
+						id: .custom("withEnvironment.missingEnvironmentVariables"),
+						severity: .error
+					)
+				)
+			)
+			return []
 		}
 
-		guard let expression = codeItem.item.as(ExprSyntax.self) else {
-			context.diagnose(.error(
-				node: Syntax(codeItem),
-				message: "@WithEnvironment must be attached to a SwiftUI view expression",
-				id: "withEnvironment.invalidAttachment"
-			))
-			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
+		guard let expression = viewExpression else {
+			context.diagnose(
+				Diagnostic(
+					node: Syntax(node),
+					message: QizhMacroGeneratorDiagnostic(
+						message: "#WithEnvironment requires a view expression",
+						id: .custom("withEnvironment.missingViewExpression"),
+						severity: .error
+					)
+				)
+			)
+			return []
 		}
 
 		let variables = Self.parseVariables(in: variableClosure, context: context)
 		guard !variables.isEmpty else {
-			context.diagnose(.error(
-				node: Syntax(variableClosure),
-				message: "@WithEnvironment requires at least one variable declaration",
-				id: "withEnvironment.missingVariables"
-			))
-			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
+			context.diagnose(
+				Diagnostic(
+					node: Syntax(variableClosure),
+					message: QizhMacroGeneratorDiagnostic(
+						message: "#WithEnvironment requires at least one variable declaration",
+						id: .custom("withEnvironment.missingVariables"),
+						severity: .error
+					)
+				)
+			)
+			return []
 		}
 
 		let structName = Self.makeStructName(from: providedName, seed: expression.description)
@@ -58,15 +105,11 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 			named: structName,
 			variables: variables
 		)
-		let wrapperCall = Self.makeWrapperCall(
-			named: structName,
-			variables: variables,
-			bodyExpression: expression
-		)
-
+		
+		// For declaration macro, we can only return declarations
+		// The wrapper call needs to be handled differently
 		return [
-			CodeBlockItemSyntax(item: .decl(DeclSyntax(stringLiteral: wrapperStruct))),
-			CodeBlockItemSyntax(item: .expr(ExprSyntax(stringLiteral: wrapperCall)))
+			DeclSyntax(stringLiteral: wrapperStruct)
 		]
 	}
 
@@ -90,49 +133,74 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 
 				let name = pattern.identifier.text.withBackticksTrimmed
 				if seenNames.contains(name) {
-					context.diagnose(.error(
-						node: Syntax(pattern),
-						message: "Duplicate variable name \(name)",
-						id: "withEnvironment.duplicateName"
-					))
+					context.diagnose(
+						Diagnostic(
+							node: Syntax(pattern),
+							message: QizhMacroGeneratorDiagnostic(
+								message: "Duplicate variable name \(name)",
+								id: .custom("withEnvironment.duplicateName"),
+								severity: .error
+							)
+						)
+					)
 					continue
 				}
 
 				guard let type = binding.typeAnnotation?.type else {
-					context.diagnose(.error(
-						node: Syntax(binding),
-						message: "Environment variable \(name) must declare a type",
-						id: "withEnvironment.missingType"
-					))
+					context.diagnose(
+						Diagnostic(
+							node: Syntax(binding),
+							message: QizhMacroGeneratorDiagnostic(
+								message: "Environment variable \(name) must declare a type",
+								id: .custom("withEnvironment.missingType"),
+								severity: .error
+							)
+						)
+					)
 					continue
 				}
 
 				let typeText = type.description.trimmingCharacters(in: .whitespacesAndNewlines)
 				if seenTypes.contains(typeText) {
-					context.diagnose(.error(
-						node: Syntax(binding),
-						message: "Duplicate environment variable type \(typeText)",
-						id: "withEnvironment.duplicateType"
-					))
+					context.diagnose(
+						Diagnostic(
+							node: Syntax(binding),
+							message: QizhMacroGeneratorDiagnostic(
+								message: "Duplicate environment variable type \(typeText)",
+								id: .custom("withEnvironment.duplicateType"),
+								severity: .error
+							)
+						)
+					)
 					continue
 				}
 
 				if binding.initializer != nil {
-					context.diagnose(.error(
-						node: Syntax(binding),
-						message: "Environment variable \(name) cannot be initialized",
-						id: "withEnvironment.initialized"
-					))
+					context.diagnose(
+						Diagnostic(
+							node: Syntax(binding),
+							message: QizhMacroGeneratorDiagnostic(
+								message: "Environment variable \(name) cannot be initialized",
+								id: .custom("withEnvironment.initialized"),
+								severity: .error
+							)
+						)
+					)
 					continue
 				}
 
 				let classification = EnvironmentClassification(typeText: typeText)
 				if classification == .unsupported {
-					context.diagnose(.warning(
-						node: Syntax(binding),
-						message: "\(typeText) is not Observable or ObservableObject. Remove its declaration.",
-						id: "withEnvironment.unsupportedType"
-					))
+					context.diagnose(
+						Diagnostic(
+							node: Syntax(binding),
+							message: QizhMacroGeneratorDiagnostic(
+								message: "\(typeText) is not Observable or ObservableObject. Remove its declaration.",
+								id: .custom("withEnvironment.unsupportedType"),
+								severity: .warning
+							)
+						)
+					)
 				}
 
 				variables.append(EnvironmentVariable(name: name, type: typeText, classification: classification))
