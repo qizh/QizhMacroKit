@@ -23,29 +23,29 @@ struct WithEnvironmentMacroTests {
 	func expandsEnvironmentBindings() {
 		let hash = fnvSuffix(for: "Text(\"Hello\")")
 		assertMacroExpansion(
-		"""
-		@WithEnvironment("Sample") {
-			var store: MacroStore
-			var navigation: MacroNavigation
-		}
-		Text("Hello")
-		""",
-		expandedSource:
-		"""
-		fileprivate struct _Sample_\(hash)<Content: View>: View {
-			@EnvironmentObject private var store: MacroStore
-			
-			@Environment(MacroNavigation.self) private var navigation
-			
-			let content: @MainActor @Sendable (MacroStore, MacroNavigation) -> Content
-			
-			var body: some View {
-				content(store, navigation)
+			"""
+			@WithEnvironment("Sample") {
+				var store: MacroStore
+				var navigation: MacroNavigation
 			}
-		}
-		_Sample_\(hash)(content: { store, navigation in Text("Hello") })
-		""",
-		macros: withEnvironmentMacros
+			Text("Hello")
+			""",
+			expandedSource:
+				"""
+				fileprivate struct _Sample_\(hash)<Content: View>: View {
+					@EnvironmentObject private var store: MacroStore
+					
+					@Environment(MacroNavigation.self) private var navigation
+					
+					let content: @MainActor @Sendable (MacroStore, MacroNavigation) -> Content
+					
+					var body: some View {
+						content(store, navigation)
+					}
+				}
+				_Sample_\(hash)(content: { store, navigation in Text("Hello") })
+				""",
+			macros: withEnvironmentMacros
 		)
 	}
 	
