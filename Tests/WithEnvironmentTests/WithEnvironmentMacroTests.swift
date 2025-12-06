@@ -44,23 +44,21 @@ struct WithEnvironmentMacroTests {
                 let seed = "{\n        var store: DemoStoreObservableObject\n        var nav: DemoNavigationObservable\n}" + "{\n    VStack {\n        Text(title)\n        Text(nav.path)\n    }\n}"
                 let suffix = deterministicSuffix(for: seed)
                 let expected = "let title = \"Hello\"\n" +
-                """
-                {
-	struct _WithEnvironment_\(suffix)<Capture0>: View {
-		let title: Capture0
-		@EnvironmentObject private var store: DemoStoreObservableObject
-		@Environment(DemoNavigationObservable.self) private var nav
-		var body: some View {
-			VStack {
-				Text(title)
-				Text(nav.path)
-			}
-		}
-	}
-
-	return _WithEnvironment_\(suffix)(title: title)
-                }()
-                """
+                        "{\n" +
+                        "\tstruct _WithEnvironment_\(suffix)<Capture0>: View {\n" +
+                        "\t\tlet title: Capture0\n" +
+                        "\t\t@EnvironmentObject private var store: DemoStoreObservableObject\n" +
+                        "\t\t@Environment(DemoNavigationObservable.self) private var nav\n" +
+                        "\t\tvar body: some View {\n" +
+                        "\t\t\tVStack {\n" +
+                        "\t\t\t\tText(title)\n" +
+                        "\t\t\t\tText(nav.path)\n" +
+                        "\t\t\t}\n" +
+                        "\t\t}\n" +
+                        "\t}\n" +
+                        "\n" +
+                        "\treturn _WithEnvironment_\(suffix)(title: title)\n" +
+                        "}()"
 
                 assertMacroExpansion(
                         source,
@@ -127,6 +125,36 @@ struct WithEnvironmentMacroTests {
                                         severity: .error
                                 )
                         ],
+                        macros: macros,
+                        indentationWidth: .tab
+                )
+        }
+
+        @Test("Expands with custom struct name")
+        func expandsWithCustomName() {
+                let source = #"""
+                #WithEnvironment("MyEnvView", {
+                        var store: DemoStoreObservableObject
+                }) {
+                        Text("Hello")
+                }
+                """#
+                let seed = "{\n        var store: DemoStoreObservableObject\n}" + "{\n    Text(\"Hello\")\n}"
+                let suffix = deterministicSuffix(for: seed)
+                let expected = "{\n" +
+                        "\tstruct _MyEnvView_\(suffix): View {\n" +
+                        "\t\t@EnvironmentObject private var store: DemoStoreObservableObject\n" +
+                        "\t\tvar body: some View {\n" +
+                        "\t\t\tText(\"Hello\")\n" +
+                        "\t\t}\n" +
+                        "\t}\n" +
+                        "\n" +
+                        "\treturn _MyEnvView_\(suffix)()\n" +
+                        "}()"
+
+                assertMacroExpansion(
+                        source,
+                        expandedSource: expected,
                         macros: macros,
                         indentationWidth: .tab
                 )
