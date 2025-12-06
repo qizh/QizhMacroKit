@@ -131,7 +131,7 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 					continue
 				}
 
-				if classification == .unsupported {
+				if classification == .defaultEnvironment {
 					context.diagnose(.warning(
 						node: Syntax(binding),
 						message: "\(typeText) requires @EnvironmentObject or @Environment attribute. Defaulting to @Environment.",
@@ -159,8 +159,8 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 				return .environment
 			}
 		}
-		// Default to .environment for plain variable declarations (most common case for @Observable types)
-		return .unsupported
+		// No explicit attribute specified; will default to @Environment with a warning
+		return .defaultEnvironment
 	}
 
 	private static func makeStructName(from explicit: String?, seed: String) -> String {
@@ -227,10 +227,7 @@ private struct EnvironmentVariable {
 		switch classification {
 		case .environmentObject:
 			"@EnvironmentObject private var \(name): \(type)"
-		case .environment:
-			"@Environment(\(type).self) private var \(name)"
-		case .unsupported:
-			// Default to @Environment for types without explicit attribute
+		case .environment, .defaultEnvironment:
 			"@Environment(\(type).self) private var \(name)"
 		}
 	}
@@ -241,5 +238,6 @@ private struct EnvironmentVariable {
 private enum EnvironmentClassification {
 	case environmentObject
 	case environment
-	case unsupported
+	/// No explicit attribute was specified; defaults to @Environment with a warning
+	case defaultEnvironment
 }
