@@ -84,6 +84,201 @@ struct WithEnvironmentMacroTests {
 			macros: withEnvironmentMacros
 		)
 	}
+	
+	@Test("Errors on duplicate variable names")
+	func errorsOnDuplicateVariableNames() {
+		assertMacroExpansion(
+			"""
+			@WithEnvironment("Duplicate") {
+				var store: MacroStore
+				var store: MacroNavigation
+			}
+			Text("Duplicate")
+			""",
+			expandedSource:
+				"""
+				Text("Duplicate")
+				""",
+			diagnostics: [
+				DiagnosticSpec(
+					message: "Duplicate variable name store",
+					line: 4,
+					column: 6,
+					severity: .error
+				)
+			],
+			macros: withEnvironmentMacros
+		)
+	}
+	
+	@Test("Errors on duplicate variable types")
+	func errorsOnDuplicateVariableTypes() {
+		assertMacroExpansion(
+			"""
+			@WithEnvironment("DuplicateType") {
+				var store1: MacroStore
+				var store2: MacroStore
+			}
+			Text("DuplicateType")
+			""",
+			expandedSource:
+				"""
+				Text("DuplicateType")
+				""",
+			diagnostics: [
+				DiagnosticSpec(
+					message: "Duplicate environment variable type MacroStore",
+					line: 4,
+					column: 6,
+					severity: .error
+				)
+			],
+			macros: withEnvironmentMacros
+		)
+	}
+	
+	@Test("Errors on variables with initializers")
+	func errorsOnVariablesWithInitializers() {
+		assertMacroExpansion(
+			"""
+			@WithEnvironment("Initialized") {
+				var store: MacroStore = MacroStore()
+			}
+			Text("Initialized")
+			""",
+			expandedSource:
+				"""
+				Text("Initialized")
+				""",
+			diagnostics: [
+				DiagnosticSpec(
+					message: "Environment variable store cannot be initialized",
+					line: 3,
+					column: 6,
+					severity: .error
+				)
+			],
+			macros: withEnvironmentMacros
+		)
+	}
+	
+	@Test("Errors on missing type annotations")
+	func errorsOnMissingTypeAnnotations() {
+		assertMacroExpansion(
+			"""
+			@WithEnvironment("MissingType") {
+				var store
+			}
+			Text("MissingType")
+			""",
+			expandedSource:
+				"""
+				Text("MissingType")
+				""",
+			diagnostics: [
+				DiagnosticSpec(
+					message: "Environment variable store must declare a type",
+					line: 3,
+					column: 6,
+					severity: .error
+				)
+			],
+			macros: withEnvironmentMacros
+		)
+	}
+	
+	@Test("Errors on empty variable closure")
+	func errorsOnEmptyVariableClosure() {
+		assertMacroExpansion(
+			"""
+			@WithEnvironment("Empty") {
+			}
+			Text("Empty")
+			""",
+			expandedSource:
+				"""
+				Text("Empty")
+				""",
+			diagnostics: [
+				DiagnosticSpec(
+					message: "@WithEnvironment requires at least one variable declaration",
+					line: 1,
+					column: 27,
+					severity: .error
+				)
+			],
+			macros: withEnvironmentMacros
+		)
+	}
+	
+	@Test("Expands environment accessors for mixed types")
+	func expandsEnvironmentBindingsForMixedTypes() {
+		let hash = fnvSuffix(for: "Text(\"Mixed\")")
+		assertMacroExpansion(
+			"""
+			@WithEnvironment("Mixed") {
+				var store: MacroStore
+				var navigation: MacroNavigation
+				var count: Int
+			}
+			Text("Mixed")
+			""",
+			expandedSource:
+				"""
+				fileprivate struct _Mixed_\(hash)<Content: View>: View {
+					@EnvironmentObject private var store: MacroStore
+					
+					@Environment(MacroNavigation.self) private var navigation
+					
+					@available(*, unavailable, message: "Unsupported environment variable type: Int")
+					private var count: Int { fatalError("Unsupported environment variable type: Int") }
+					
+					let content: @MainActor @Sendable (MacroStore, MacroNavigation, Int) -> Content
+					
+					var body: some View {
+						content(store, navigation, count)
+					}
+				}
+				_Mixed_\(hash)(content: { store, navigation, count in Text("Mixed") })
+				""",
+			diagnostics: [
+				DiagnosticSpec(
+					message: "Int is not Observable or ObservableObject. Remove its declaration.",
+					line: 5,
+					column: 5,
+					severity: .warning
+				)
+			],
+			macros: withEnvironmentMacros
+		)
+	}
+	
+	@Test("Expands environment accessors for escaped keyword variable names")
+	func expandsEnvironmentBindingsForEscapedKeywords() {
+		let hash = fnvSuffix(for: "Text(\"Escaped\")")
+		assertMacroExpansion(
+			"""
+			@WithEnvironment("Escaped") {
+				var `class`: MacroStore
+			}
+			Text("Escaped")
+			""",
+			expandedSource:
+				"""
+				fileprivate struct _Escaped_\(hash)<Content: View>: View {
+					@EnvironmentObject private var `class`: MacroStore
+					
+					let content: @MainActor @Sendable (MacroStore) -> Content
+					
+					var body: some View {
+						content(`class`)
+					}
+				}
+				_Escaped_\(hash)(content: { `class` in Text("Escaped") })
+				""",
+			macros: withEnvironmentMacros
+		)
+	}
 }
 
 private func fnvSuffix(for seed: String) -> String {
