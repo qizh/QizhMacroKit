@@ -43,22 +43,22 @@ struct WithEnvironmentMacroTests {
                 """#
                 let seed = "{\n        var store: DemoStoreObservableObject\n        var nav: DemoNavigationObservable\n}" + "{\n    VStack {\n        Text(title)\n        Text(nav.path)\n    }\n}"
                 let suffix = deterministicSuffix(for: seed)
-                let expected = "let title = \"Hello\"\n" +
-                """
+                let expected = """
+                let title = "Hello"
                 {
-	struct _WithEnvironment_\(suffix)<Capture0>: View {
-		let title: Capture0
-		@EnvironmentObject private var store: DemoStoreObservableObject
-		@Environment(DemoNavigationObservable.self) private var nav
-		var body: some View {
-			VStack {
-				Text(title)
-				Text(nav.path)
-			}
-		}
-	}
+                \tstruct _WithEnvironment_\(suffix)<Capture0>: View {
+                \t\tlet title: Capture0
+                \t\t@EnvironmentObject private var store: DemoStoreObservableObject
+                \t\t@Environment(DemoNavigationObservable.self) private var nav
+                \t\tvar body: some View {
+                \t\t\tVStack {
+                \t\t\t\tText(title)
+                \t\t\t\tText(nav.path)
+                \t\t\t}
+                \t\t}
+                \t}
 
-	return _WithEnvironment_\(suffix)(title: title)
+                \treturn _WithEnvironment_\(suffix)(title: title)
                 }()
                 """
 
@@ -125,6 +125,43 @@ struct WithEnvironmentMacroTests {
                                         line: 3,
                                         column: 33,
                                         severity: .error
+                                )
+                        ],
+                        macros: macros,
+                        indentationWidth: .tab
+                )
+        }
+
+        @Test("Warns on unsupported type")
+        func unsupportedTypeWarning() {
+                let seed = "{\n        var settings: SomeCustomType\n}" + "{\n    EmptyView()\n}"
+                let suffix = deterministicSuffix(for: seed)
+                assertMacroExpansion(
+                        #"""
+                        #WithEnvironment({
+                                var settings: SomeCustomType
+                        }) {
+                                EmptyView()
+                        }
+                        """#,
+                        expandedSource: """
+                        {
+                        \tstruct _WithEnvironment_\(suffix): View {
+                        \t\t@Environment(SomeCustomType.self) private var settings
+                        \t\tvar body: some View {
+                        \t\t\tEmptyView()
+                        \t\t}
+                        \t}
+
+                        \treturn _WithEnvironment_\(suffix)()
+                        }()
+                        """,
+                        diagnostics: [
+                                .init(
+                                        message: "Type SomeCustomType does not conform to ObservableObject or Observable.",
+                                        line: 2,
+                                        column: 23,
+                                        severity: .warning
                                 )
                         ],
                         macros: macros,
