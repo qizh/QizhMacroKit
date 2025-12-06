@@ -26,30 +26,45 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 			.joined()
 		let variableClosureExpr = arguments?.count == 2 ? arguments?.last?.expression : arguments?.first?.expression
 		guard let variableClosure = variableClosureExpr?.as(ClosureExprSyntax.self) else {
-			context.diagnose(.error(
-				node: Syntax(node),
-				message: "@WithEnvironment requires a closure with variable declarations",
-				id: "withEnvironment.missingEnvironmentVariables"
-			))
+			context.diagnose(
+				Diagnostic(
+					node: Syntax(node),
+					message: QizhMacroGeneratorDiagnostic(
+						message: "@WithEnvironment requires a closure with variable declarations",
+						id: .custom("withEnvironment.missingEnvironmentVariables"),
+						severity: .error
+					)
+				)
+			)
 			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
 		}
 
 		guard let expression = codeItem.item.as(ExprSyntax.self) else {
-			context.diagnose(.error(
-				node: Syntax(codeItem),
-				message: "@WithEnvironment must be attached to a SwiftUI view expression",
-				id: "withEnvironment.invalidAttachment"
-			))
+			context.diagnose(
+				Diagnostic(
+					node: Syntax(codeItem),
+					message: QizhMacroGeneratorDiagnostic(
+						message: "@WithEnvironment must be attached to a SwiftUI view expression",
+						id: .custom("withEnvironment.invalidAttachment"),
+						severity: .error
+					)
+				)
+			)
 			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
 		}
 
 		let variables = Self.parseVariables(in: variableClosure, context: context)
 		guard !variables.isEmpty else {
-			context.diagnose(.error(
-				node: Syntax(variableClosure),
-				message: "@WithEnvironment requires at least one variable declaration",
-				id: "withEnvironment.missingVariables"
-			))
+			context.diagnose(
+				Diagnostic(
+					node: Syntax(variableClosure),
+					message: QizhMacroGeneratorDiagnostic(
+						message: "@WithEnvironment requires at least one variable declaration",
+						id: .custom("withEnvironment.missingVariables"),
+						severity: .error
+					)
+				)
+			)
 			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
 		}
 
@@ -90,49 +105,74 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 
 				let name = pattern.identifier.text.withBackticksTrimmed
 				if seenNames.contains(name) {
-					context.diagnose(.error(
-						node: Syntax(pattern),
-						message: "Duplicate variable name \(name)",
-						id: "withEnvironment.duplicateName"
-					))
+					context.diagnose(
+						Diagnostic(
+							node: Syntax(pattern),
+							message: QizhMacroGeneratorDiagnostic(
+								message: "Duplicate variable name \(name)",
+								id: .custom("withEnvironment.duplicateName"),
+								severity: .error
+							)
+						)
+					)
 					continue
 				}
 
 				guard let type = binding.typeAnnotation?.type else {
-					context.diagnose(.error(
-						node: Syntax(binding),
-						message: "Environment variable \(name) must declare a type",
-						id: "withEnvironment.missingType"
-					))
+					context.diagnose(
+						Diagnostic(
+							node: Syntax(binding),
+							message: QizhMacroGeneratorDiagnostic(
+								message: "Environment variable \(name) must declare a type",
+								id: .custom("withEnvironment.missingType"),
+								severity: .error
+							)
+						)
+					)
 					continue
 				}
 
 				let typeText = type.description.trimmingCharacters(in: .whitespacesAndNewlines)
 				if seenTypes.contains(typeText) {
-					context.diagnose(.error(
-						node: Syntax(binding),
-						message: "Duplicate environment variable type \(typeText)",
-						id: "withEnvironment.duplicateType"
-					))
+					context.diagnose(
+						Diagnostic(
+							node: Syntax(binding),
+							message: QizhMacroGeneratorDiagnostic(
+								message: "Duplicate environment variable type \(typeText)",
+								id: .custom("withEnvironment.duplicateType"),
+								severity: .error
+							)
+						)
+					)
 					continue
 				}
 
 				if binding.initializer != nil {
-					context.diagnose(.error(
-						node: Syntax(binding),
-						message: "Environment variable \(name) cannot be initialized",
-						id: "withEnvironment.initialized"
-					))
+					context.diagnose(
+						Diagnostic(
+							node: Syntax(binding),
+							message: QizhMacroGeneratorDiagnostic(
+								message: "Environment variable \(name) cannot be initialized",
+								id: .custom("withEnvironment.initialized"),
+								severity: .error
+							)
+						)
+					)
 					continue
 				}
 
 				let classification = EnvironmentClassification(typeText: typeText)
 				if classification == .unsupported {
-					context.diagnose(.warning(
-						node: Syntax(binding),
-						message: "\(typeText) is not Observable or ObservableObject. Remove its declaration.",
-						id: "withEnvironment.unsupportedType"
-					))
+					context.diagnose(
+						Diagnostic(
+							node: Syntax(binding),
+							message: QizhMacroGeneratorDiagnostic(
+								message: "\(typeText) is not Observable or ObservableObject. Remove its declaration.",
+								id: .custom("withEnvironment.unsupportedType"),
+								severity: .warning
+							)
+						)
+					)
 				}
 
 				variables.append(EnvironmentVariable(name: name, type: typeText, classification: classification))
