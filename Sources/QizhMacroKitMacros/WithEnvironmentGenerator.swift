@@ -215,7 +215,7 @@ private struct EnvironmentVariable {
 		case .unsupported:
 			"""
 			@available(*, unavailable, message: "Unsupported environment variable type: \(type)")
-			private var \(name): \(type) { fatalError("Unsupported environment variable type: \(type)") }
+			private var \(name): \(type) {}
 			"""
 		}
 	}
