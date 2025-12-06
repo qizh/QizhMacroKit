@@ -219,7 +219,7 @@ struct WithEnvironmentMacroTests {
 			@WithEnvironment("Mixed") {
 				var store: MacroStore
 				var navigation: MacroNavigation
-				var count: Int
+				var name: String
 			}
 			Text("Mixed")
 			""",
@@ -230,20 +230,20 @@ struct WithEnvironmentMacroTests {
 					
 					@Environment(MacroNavigation.self) private var navigation
 					
-					@available(*, unavailable, message: "Unsupported environment variable type: Int")
-					private var count: Int { fatalError("Unsupported environment variable type: Int") }
+					@available(*, unavailable, message: "Unsupported environment variable type: String")
+					private var name: String { fatalError("Unsupported environment variable type: String") }
 					
-					let content: @MainActor @Sendable (MacroStore, MacroNavigation, Int) -> Content
+					let content: @MainActor @Sendable (MacroStore, MacroNavigation, String) -> Content
 					
 					var body: some View {
-						content(store, navigation, count)
+						content(store, navigation, name)
 					}
 				}
-				_Mixed_\(hash)(content: { store, navigation, count in Text("Mixed") })
+				_Mixed_\(hash)(content: { store, navigation, name in Text("Mixed") })
 				""",
 			diagnostics: [
 				DiagnosticSpec(
-					message: "Int is not Observable or ObservableObject. Remove its declaration.",
+					message: "String is not Observable or ObservableObject. Remove its declaration.",
 					line: 5,
 					column: 5,
 					severity: .warning
