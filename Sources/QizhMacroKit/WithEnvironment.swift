@@ -5,7 +5,7 @@
 //  Created by Qizh in December 2025.
 //
 
-/// Generates a helper wrapper view that injects environment values into the attached view expression.
+/// Generates a helper wrapper view that injects environment values into the wrapped view expression.
 ///
 /// The macro accepts an optional name and a closure with plain variable declarations. Each declaration
 /// describes an environment dependency that will be fetched inside the generated wrapper view and passed
