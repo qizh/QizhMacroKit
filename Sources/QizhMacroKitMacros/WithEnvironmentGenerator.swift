@@ -63,7 +63,7 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 				Diagnostic(
 					node: Syntax(node),
 					message: QizhMacroGeneratorDiagnostic(
-						message: "#WithEnvironment requires a closure with variable declarations",
+						message: "@WithEnvironment requires a closure with variable declarations",
 						id: "withEnvironment.missingEnvironmentVariables",
 						severity: .error
 					)
