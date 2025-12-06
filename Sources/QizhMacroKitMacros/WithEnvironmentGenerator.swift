@@ -63,7 +63,7 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 				Diagnostic(
 					node: Syntax(node),
 					message: QizhMacroGeneratorDiagnostic(
-						message: "#WithEnvironment requires a closure with variable declarations",
+						message: "@WithEnvironment requires a closure with variable declarations",
 						id: "withEnvironment.missingEnvironmentVariables",
 						severity: .error
 					)
@@ -77,7 +77,7 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 				Diagnostic(
 					node: Syntax(node),
 					message: QizhMacroGeneratorDiagnostic(
-						message: "#WithEnvironment requires a view expression",
+						message: "@WithEnvironment requires a view expression",
 						id: "withEnvironment.missingViewExpression",
 						severity: .error
 					)
@@ -95,7 +95,7 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 					id: "withEnvironment.missingVariables"
 				)
 			)
-			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
+			return []
 		}
 		
 		let structName = Self.makeStructName(from: providedName, seed: expression.description)
@@ -109,9 +109,9 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 		return [
 			DeclSyntax(stringLiteral: wrapperStruct),
 			DeclSyntax(stringLiteral: Self.makeWrapperCall(
-				structName: structName,
-				variableClosure: variableClosure,
-				viewExpression: expression
+				named: structName,
+				variables: variables,
+				bodyExpression: expression
 			))
 		]
 	}
@@ -235,15 +235,7 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 	///   - `0xcbf29ce484222325`: The FNV-1a 64-bit offset basis (initial hash value)
 	///   - `0x100000001b3`: The FNV-1a 64-bit prime (multiplication factor)
 	private static func hash(seed: String) -> String {
-		// FNV-1a 64-bit offset basis
-		var value: UInt64 = 0xcbf29ce484222325
-		for scalar in seed.unicodeScalars {
-			value ^= UInt64(scalar.value)
-			// FNV-1a 64-bit prime
-			value = value &* 0x100000001b3
-		}
-		let hex = String(value, radix: 16, uppercase: true)
-		return String(hex.suffix(8))
+		seed.fnv1aHashSuffix
 	}
 	
 	private static func makeWrapperStruct(

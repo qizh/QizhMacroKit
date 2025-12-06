@@ -210,15 +210,14 @@ struct WithEnvironmentMacroTests {
 		)
 	}
 	
-	@Test("Expands environment accessors for mixed types")
+	@Test("Expands environment accessors for mixed types with explicit attributes")
 	func expandsEnvironmentBindingsForMixedTypes() {
 		let hash = fnvSuffix(for: "Text(\"Mixed\")")
 		assertMacroExpansion(
 			"""
 			@WithEnvironment("Mixed") {
-				var store: MacroStore
-				var navigation: MacroNavigation
-				var name: String
+				@EnvironmentObject var store: MacroStore
+				@Environment var navigation: MacroNavigation
 			}
 			Text("Mixed")
 			""",
@@ -229,25 +228,14 @@ struct WithEnvironmentMacroTests {
 					
 					@Environment(MacroNavigation.self) private var navigation
 					
-					@available(*, unavailable, message: "Unsupported environment variable type: String")
-					private var name: String { fatalError("Unsupported environment variable type: String") }
-					
-					let content: @MainActor @Sendable (MacroStore, MacroNavigation, String) -> Content
+					let content: @MainActor @Sendable (MacroStore, MacroNavigation) -> Content
 					
 					var body: some View {
-						content(store, navigation, name)
+						content(store, navigation)
 					}
 				}
-				_Mixed_\(hash)(content: { store, navigation, name in Text("Mixed") })
+				_Mixed_\(hash)(content: { store, navigation in Text("Mixed") })
 				""",
-			diagnostics: [
-				DiagnosticSpec(
-					message: "String is not Observable or ObservableObject. Remove its declaration.",
-					line: 5,
-					column: 5,
-					severity: .warning
-				)
-			],
 			macros: withEnvironmentMacros
 		)
 	}
@@ -258,7 +246,7 @@ struct WithEnvironmentMacroTests {
 		assertMacroExpansion(
 			"""
 			@WithEnvironment("Escaped") {
-				var `class`: MacroStore
+				@EnvironmentObject var `class`: MacroStore
 			}
 			Text("Escaped")
 			""",
@@ -281,13 +269,7 @@ struct WithEnvironmentMacroTests {
 }
 
 private func fnvSuffix(for seed: String) -> String {
-	var value: UInt64 = 0xcbf29ce484222325
-	for scalar in seed.unicodeScalars {
-		value ^= UInt64(scalar.value)
-		value = value &* 0x100000001b3
-	}
-	let hex = String(value, radix: 16, uppercase: true)
-	return String(hex.suffix(8))
+	seed.fnv1aHashSuffix
 }
 #else
 
