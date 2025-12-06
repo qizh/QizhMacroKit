@@ -1,3 +1,10 @@
+//
+//  WithEnvironment.swift
+//  QizhMacroKit
+//
+//  Created by Qizh in December 2025.
+//
+
 /// Generates a helper wrapper view that injects environment values into the attached view expression.
 ///
 /// The macro accepts an optional name and a closure with plain variable declarations. Each declaration
