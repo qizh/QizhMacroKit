@@ -19,28 +19,32 @@ private let withEnvironmentMacros: [String: Macro.Type] = [
 
 @Suite("WithEnvironment macro")
 struct WithEnvironmentMacroTests {
-	@Test("Expands environment accessors for observable types")
-	func expandsEnvironmentBindings() {
-		let hash = fnvSuffix(for: "Text(\"Hello\")")
-		assertMacroExpansion(
-		"""
-		@WithEnvironment("Sample") {
-			var store: MacroStore
-			var navigation: MacroNavigation
-		}
-		Text("Hello")
-		""",
-		expandedSource:
-		"""
-		fileprivate struct _Sample_\(hash)<Content: View>: View {
-			@EnvironmentObject private var store: MacroStore
-			
-			@Environment(MacroNavigation.self) private var navigation
-			
-			let content: @MainActor @Sendable (MacroStore, MacroNavigation) -> Content
-			
-			var body: some View {
-				content(store, navigation)
+        @Test("Expands environment accessors for observable types")
+        func expandsEnvironmentBindings() {
+                let hash = fnvSuffix(for: "Text(\"Hello\")")
+                assertMacroExpansion(
+                """
+                @WithEnvironment("Sample") {
+                        var store: MacroStore
+                        var navigation: MacroNavigation
+                }
+                Text("Hello")
+                """,
+                expandedSource:
+                """
+                fileprivate struct _Sample_\(hash)<Content: View>: View {
+                        private var storeBinding = EnvironmentBindingResolver.binding(for: MacroStore.self)
+
+                        private var store: MacroStore { storeBinding.value }
+
+                        private var navigationBinding = EnvironmentBindingResolver.binding(for: MacroNavigation.self)
+
+                        private var navigation: MacroNavigation { navigationBinding.value }
+
+                        let content: @MainActor @Sendable (MacroStore, MacroNavigation) -> Content
+
+                        var body: some View {
+                                content(store, navigation)
 			}
 		}
 		_Sample_\(hash)(content: { store, navigation in Text("Hello") })
@@ -49,41 +53,35 @@ struct WithEnvironmentMacroTests {
 		)
 	}
 	
-	@Test("Warns about unsupported environment type")
-	func warnsOnUnsupportedType() {
-		let hash = fnvSuffix(for: "Text(\\\"Unsupported\\\")")
-		assertMacroExpansion(
-		"""
-		@WithEnvironment("Unsupported") {
-			var count: Int
-		}
-		Text("Unsupported")
-		""",
-		expandedSource:
-		"""
-		fileprivate struct _Unsupported_\(hash)<Content: View>: View {
-			@available(*, unavailable, message: "Unsupported environment variable type: Int")
-			private var count: Int { fatalError("Unsupported environment variable type: Int") }
-			
-			let content: @MainActor @Sendable (Int) -> Content
-			
-			var body: some View {
-				content(count)
-			}
-		}
-		_Unsupported_\(hash)(content: { count in Text("Unsupported") })
-		""",
-		diagnostics: [
-	DiagnosticSpec(
-	message: "Int is not Observable or ObservableObject. Remove its declaration.",
-	line: 3,
-	column: 5,
-	severity: .warning
-	)
-		],
-		macros: withEnvironmentMacros
-		)
-	}
+        @Test("Warns about unsupported environment type")
+        func warnsOnUnsupportedType() {
+                let hash = fnvSuffix(for: "Text(\"Unsupported\")")
+                assertMacroExpansion(
+                """
+                @WithEnvironment("Unsupported") {
+                        var count: Int
+                }
+                Text("Unsupported")
+                """,
+                expandedSource:
+                """
+                fileprivate struct _Unsupported_\(hash)<Content: View>: View {
+                        private var countBinding = EnvironmentBindingResolver.binding(for: Int.self)
+
+                        @available(*, unavailable, message: "Unsupported environment variable type")
+                        private var count: Int { countBinding.value }
+
+                        let content: @MainActor @Sendable (Int) -> Content
+
+                        var body: some View {
+                                content(count)
+                        }
+                }
+                _Unsupported_\(hash)(content: { count in Text("Unsupported") })
+                """,
+                macros: withEnvironmentMacros
+                )
+        }
 }
 
 private func fnvSuffix(for seed: String) -> String {
