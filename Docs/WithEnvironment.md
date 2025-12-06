@@ -27,15 +27,17 @@ This expansion produces a fileprivate wrapper view named using the provided pref
 
 ```swift
 fileprivate struct _Sample_89ABCDEF<Content: View>: View {
-@EnvironmentObject private var store: MacroStore
-@Environment(MacroNavigation.self) private var navigation
+	@EnvironmentObject private var store: MacroStore
+	@Environment(MacroNavigation.self) private var navigation
 
-let content: @MainActor @Sendable (MacroStore, MacroNavigation) -> Content
+	let content: @MainActor @Sendable (MacroStore, MacroNavigation) -> Content
 
-var body: some View {
-content(store, navigation)
+	var body: some View {
+		content(store, navigation)
+	}
 }
-}
 
-_Sample_89ABCDEF(content: { store, navigation in Text("Hello") })
+_Sample_89ABCDEF { store, navigation in 
+	Text("Hello")
+}
 ```
