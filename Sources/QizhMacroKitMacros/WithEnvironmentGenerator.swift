@@ -9,53 +9,36 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftCompilerPlugin
 import SwiftDiagnostics
-import SwiftSyntaxMacros
 
-public struct WithEnvironmentGenerator: DeclarationMacro {
+// MARK: - WithEnv Generator (Production)
+/// Generator for `#WithEnv` - `@freestanding(declaration)` macro.
+/// Produces only the wrapper struct declaration. Works in production Swift compilers.
+public struct WithEnvGenerator: DeclarationMacro {
 	public static func expansion(
 		of node: some FreestandingMacroExpansionSyntax,
 		in context: some MacroExpansionContext
 	) throws -> [DeclSyntax] {
 		let arguments = node.arguments
-		
-		// Parse the optional name argument
-		var providedName: String? = nil
-		var variableClosureExpr: ExprSyntax? = nil
-		var viewExpression: ExprSyntax? = nil
-		
-		// Arguments can be:
-		// 1. (name, closure, viewExpr)
-		// 2. (closure, viewExpr)
-		let argArray = Array(arguments)
-		
-		for arg in argArray {
-			if let stringLiteral = arg.expression.as(StringLiteralExprSyntax.self) {
-				providedName = stringLiteral.segments.compactMap { segment -> String? in
-					if let stringSegment = segment.as(StringSegmentSyntax.self) {
-						return stringSegment.content.text
-					}
-					return nil
-				}.joined()
-			} else if arg.expression.as(ClosureExprSyntax.self) != nil {
-				variableClosureExpr = arg.expression
-			} else {
-				// Last non-string, non-closure arg is the view expression
-				viewExpression = arg.expression
+		let providedName = arguments.first?.expression.as(StringLiteralExprSyntax.self)?.segments
+			.compactMap { segment in
+				if let content = segment.as(StringSegmentSyntax.self) {
+					content.content.text
+				} else {
+					nil
+				}
 			}
-		}
+			.joined()
 		
-		// Also check trailing closure
-		if let trailingClosure = node.trailingClosure {
-			if variableClosureExpr == nil {
-				variableClosureExpr = ExprSyntax(trailingClosure)
-			} else {
-				viewExpression = ExprSyntax(trailingClosure)
-			}
-		}
-		
-		// Check additional trailing closures
-		if let additionalClosures = node.additionalTrailingClosures.first {
-			viewExpression = ExprSyntax(additionalClosures.closure)
+		// Find the closure with variable declarations
+		let variableClosureExpr: ExprSyntax?
+		if arguments.count == 2 {
+			variableClosureExpr = arguments.last?.expression
+		} else if arguments.count == 1 && arguments.first?.expression.as(StringLiteralExprSyntax.self) != nil {
+			variableClosureExpr = node.trailingClosure.map { ExprSyntax($0) }
+		} else if arguments.count == 1 {
+			variableClosureExpr = arguments.first?.expression
+		} else {
+			variableClosureExpr = node.trailingClosure.map { ExprSyntax($0) }
 		}
 		
 		guard let variableClosure = variableClosureExpr?.as(ClosureExprSyntax.self) else {
@@ -63,8 +46,8 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 				Diagnostic(
 					node: Syntax(node),
 					message: QizhMacroGeneratorDiagnostic(
-						message: "@WithEnvironment requires a closure with variable declarations",
-						id: "withEnvironment.missingEnvironmentVariables",
+						message: "#WithEnv requires a closure with variable declarations",
+						id: "withEnv.missingEnvironmentVariables",
 						severity: .error
 					)
 				)
@@ -72,51 +55,133 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 			return []
 		}
 
-		guard let expression = viewExpression else {
+		let variables = EnvironmentMacroHelpers.parseVariables(in: variableClosure, context: context)
+		guard !variables.isEmpty else {
 			context.diagnose(
 				Diagnostic(
-					node: Syntax(node),
+					node: Syntax(variableClosure),
 					message: QizhMacroGeneratorDiagnostic(
-						message: "@WithEnvironment requires a view expression",
-						id: "withEnvironment.missingViewExpression",
+						message: "#WithEnv requires at least one variable declaration",
+						id: "withEnv.missingVariables",
 						severity: .error
 					)
 				)
 			)
 			return []
 		}
+
+		let structName = EnvironmentMacroHelpers.makeStructName(from: providedName)
+		let wrapperStruct = EnvironmentMacroHelpers.makeWrapperStruct(
+			named: structName,
+			variables: variables
+		)
+
+		return [DeclSyntax(stringLiteral: wrapperStruct)]
+	}
+}
+
+// MARK: - ProvidingEnvironment Generator (Experimental)
+/// Generator for `#ProvidingEnvironment` - `@freestanding(codeItem)` macro.
+/// Produces both struct declaration and instantiation.
+/// Requires experimental CodeItemMacros feature.
+public struct ProvidingEnvironmentGenerator: CodeItemMacro {
+	public static func expansion(
+		of node: some FreestandingMacroExpansionSyntax,
+		in context: some MacroExpansionContext
+	) throws -> [CodeBlockItemSyntax] {
+		let arguments = node.arguments
+		let providedName = arguments.first?.expression.as(StringLiteralExprSyntax.self)?.segments
+			.compactMap { segment in
+				if let content = segment.as(StringSegmentSyntax.self) {
+					content.content.text
+				} else {
+					nil
+				}
+			}
+			.joined()
 		
-		let variables = Self.parseVariables(in: variableClosure, context: context)
-		guard !variables.isEmpty else {
+		/// Find the closure with variable declarations and the view expression
+		let variableClosureExpr: ExprSyntax?
+		let viewExpr: ExprSyntax?
+		
+		if arguments.count == 2 {
+			variableClosureExpr = arguments.last?.expression
+			viewExpr = node.trailingClosure.map { ExprSyntax($0) }
+		} else if arguments.count == 1 && arguments.first?.expression.as(StringLiteralExprSyntax.self) != nil {
+			variableClosureExpr = node.trailingClosure.map { ExprSyntax($0) }
+			viewExpr = node.additionalTrailingClosures.first.map { ExprSyntax($0.closure) }
+		} else if arguments.count == 1 {
+			variableClosureExpr = arguments.first?.expression
+			viewExpr = node.trailingClosure.map { ExprSyntax($0) }
+		} else {
+			variableClosureExpr = node.trailingClosure.map { ExprSyntax($0) }
+			viewExpr = node.additionalTrailingClosures.first.map { ExprSyntax($0.closure) }
+		}
+		
+		guard let variableClosure = variableClosureExpr?.as(ClosureExprSyntax.self) else {
 			context.diagnose(
-				.error(
-					node: Syntax(variableClosure),
-					message: "@WithEnvironment requires at least one variable declaration",
-					id: "withEnvironment.missingVariables"
+				Diagnostic(
+					node: Syntax(node),
+					message: QizhMacroGeneratorDiagnostic(
+						message: "#ProvidingEnvironment requires a closure with variable declarations",
+						id: "providingEnvironment.missingEnvironmentVariables",
+						severity: .error
+					)
 				)
 			)
 			return []
 		}
-		
-		let structName = Self.makeStructName(from: providedName, seed: expression.description)
-		let wrapperStruct = Self.makeWrapperStruct(
+
+		guard let expression = viewExpr else {
+			context.diagnose(
+				Diagnostic(
+					node: Syntax(node),
+					message: QizhMacroGeneratorDiagnostic(
+						message: "#ProvidingEnvironment must have a trailing closure with the view expression",
+						id: "providingEnvironment.missingViewExpression",
+						severity: .error
+					)
+				)
+			)
+			return []
+		}
+
+		let variables = EnvironmentMacroHelpers.parseVariables(in: variableClosure, context: context)
+		guard !variables.isEmpty else {
+			context.diagnose(
+				Diagnostic(
+					node: Syntax(variableClosure),
+					message: QizhMacroGeneratorDiagnostic(
+						message: "#ProvidingEnvironment requires at least one variable declaration",
+						id: "providingEnvironment.missingVariables",
+						severity: .error
+					)
+				)
+			)
+			return []
+		}
+
+		let structName = EnvironmentMacroHelpers.makeStructName(from: providedName, seed: expression.description)
+		let wrapperStruct = EnvironmentMacroHelpers.makeWrapperStruct(
 			named: structName,
 			variables: variables
 		)
-		
-		// DeclarationMacro can only return declarations, not expressions.
-		// The caller must instantiate the wrapper struct separately.
+		let wrapperCall = EnvironmentMacroHelpers.makeWrapperCall(
+			named: structName,
+			variables: variables,
+			bodyExpression: expression
+		)
+
 		return [
-			DeclSyntax(stringLiteral: wrapperStruct),
-			DeclSyntax(stringLiteral: Self.makeWrapperCall(
-				named: structName,
-				variables: variables,
-				bodyExpression: expression
-			))
+			CodeBlockItemSyntax(item: .decl(DeclSyntax(stringLiteral: wrapperStruct))),
+			CodeBlockItemSyntax(item: .expr(ExprSyntax(stringLiteral: wrapperCall)))
 		]
 	}
-	
-	private static func parseVariables(
+}
+
+// MARK: - Shared Helpers
+private enum EnvironmentMacroHelpers {
+	static func parseVariables(
 		in closure: ClosureExprSyntax,
 		context: some MacroExpansionContext
 	) -> [EnvironmentVariable] {
@@ -129,66 +194,81 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 				continue
 			}
 
-			// Check for @EnvironmentObject or @Environment attributes on the variable declaration
-			let classification = Self.classifyFromAttributes(variableDecl.attributes)
-
 			for binding in variableDecl.bindings {
 				guard let pattern = binding.pattern.as(IdentifierPatternSyntax.self) else {
 					continue
 				}
-				
+
 				let name = pattern.identifier.text.withBackticksTrimmed
 				if seenNames.contains(name) {
 					context.diagnose(
-						.error(
+						Diagnostic(
 							node: Syntax(pattern),
-							message: "Duplicate variable name \(name)",
-							id: "withEnvironment.duplicateName"
-						)
-					)
-					continue
-				}
-				
-				guard let type = binding.typeAnnotation?.type else {
-					context.diagnose(
-						.error(
-							node: Syntax(binding),
-							message: "Environment variable \(name) must declare a type",
-							id: "withEnvironment.missingType"
-						)
-					)
-					continue
-				}
-				
-				let typeText = type.description.trimmingCharacters(in: .whitespacesAndNewlines)
-				if seenTypes.contains(typeText) {
-					context.diagnose(
-						.error(
-							node: Syntax(binding),
-							message: "Duplicate environment variable type \(typeText)",
-							id: "withEnvironment.duplicateType"
-						)
-					)
-					continue
-				}
-				
-				if binding.initializer != nil {
-					context.diagnose(
-						.error(
-							node: Syntax(binding),
-							message: "Environment variable \(name) cannot be initialized",
-							id: "withEnvironment.initialized"
+							message: QizhMacroGeneratorDiagnostic(
+								message: "Duplicate variable name \(name)",
+								id: "environment.duplicateName",
+								severity: .error
+							)
 						)
 					)
 					continue
 				}
 
-				if classification == .defaultEnvironment {
-					context.diagnose(.warning(
-						node: Syntax(binding),
-						message: "\(typeText) requires @EnvironmentObject or @Environment attribute. Defaulting to @Environment.",
-						id: .custom("withEnvironment.missingAttribute")
-					))
+				guard let type = binding.typeAnnotation?.type else {
+					context.diagnose(
+						Diagnostic(
+							node: Syntax(binding),
+							message: QizhMacroGeneratorDiagnostic(
+								message: "Environment variable \(name) must declare a type",
+								id: "environment.missingType",
+								severity: .error
+							)
+						)
+					)
+					continue
+				}
+
+				let typeText = type.description.trimmingCharacters(in: .whitespacesAndNewlines)
+				if seenTypes.contains(typeText) {
+					context.diagnose(
+						Diagnostic(
+							node: Syntax(binding),
+							message: QizhMacroGeneratorDiagnostic(
+								message: "Duplicate environment variable type \(typeText)",
+								id: "environment.duplicateType",
+								severity: .error
+							)
+						)
+					)
+					continue
+				}
+
+				if binding.initializer != nil {
+					context.diagnose(
+						Diagnostic(
+							node: Syntax(binding),
+							message: QizhMacroGeneratorDiagnostic(
+								message: "Environment variable \(name) cannot be initialized",
+								id: "environment.initialized",
+								severity: .error
+							)
+						)
+					)
+					continue
+				}
+
+				let classification = EnvironmentClassification(typeText: typeText)
+				if classification == .unsupported {
+					context.diagnose(
+						Diagnostic(
+							node: Syntax(binding),
+							message: QizhMacroGeneratorDiagnostic(
+								message: "\(typeText) is not Observable or ObservableObject. Remove its declaration.",
+								id: "environment.unsupportedType",
+								severity: .warning
+							)
+						)
+					)
 				}
 
 				variables.append(EnvironmentVariable(name: name, type: typeText, classification: classification))
@@ -196,64 +276,38 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 				seenTypes.insert(typeText)
 			}
 		}
-		
+
 		return variables
 	}
 
-	private static func classifyFromAttributes(_ attributes: AttributeListSyntax) -> EnvironmentClassification {
-		for attribute in attributes {
-			guard let attr = attribute.as(AttributeSyntax.self) else { continue }
-			let attrName = attr.attributeName.description.trimmingCharacters(in: .whitespacesAndNewlines)
-			
-			if attrName == "EnvironmentObject" {
-				return .environmentObject
-			} else if attrName == "Environment" {
-				return .environment
-			}
-		}
-		// No explicit attribute specified; will default to @Environment with a warning
-		return .defaultEnvironment
-	}
-
-	private static func makeStructName(from explicit: String?, seed: String) -> String {
+	static func makeStructName(from explicit: String?, seed: String? = nil) -> String {
 		let prefix: String
 		if let explicit, !explicit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
 			prefix = explicit.trimmingCharacters(in: .whitespacesAndNewlines)
 		} else {
-			prefix = "WithEnvironment"
+			prefix = "WithEnv"
 		}
-	
-		let suffix = Self.hash(seed: seed)
-		return "_\(prefix)_\(suffix)"
+
+		if let seed {
+			let suffix = seed.fnv1aHashSuffix
+			return "_\(prefix)_\(suffix)"
+		} else {
+			return "_\(prefix)"
+		}
 	}
-	
-	/// Computes a hash of the seed string using the FNV-1a 64-bit hash algorithm.
-	/// - Parameter seed: The string to hash.
-	/// - Returns: An 8-character uppercase hexadecimal string derived from the hash.
-	/// - Note: FNV-1a (Fowler-Noll-Vo) is a non-cryptographic hash function known for its
-	///   speed and good distribution properties. The constants used are:
-	///   - `0xcbf29ce484222325`: The FNV-1a 64-bit offset basis (initial hash value)
-	///   - `0x100000001b3`: The FNV-1a 64-bit prime (multiplication factor)
-	private static func hash(seed: String) -> String {
-		seed.fnv1aHashSuffix
-	}
-	
-	private static func makeWrapperStruct(
+
+	static func makeWrapperStruct(
 		named name: String,
 		variables: [EnvironmentVariable]
 	) -> String {
-		let environmentLines = variables
-			.map { $0.propertyDeclaration }
-			.joined(separator: "\n\n")
-		let parameters = variables
-			.map(\.type)
-			.joined(separator: ", ")
-		let arguments = variables
-			.map(\.accessExpression)
-			.joined(separator: ", ")
-		let contentSignature = "@MainActor @Sendable (\(parameters)) -> Content"
+		let environmentLines = variables.map { $0.propertyDeclaration }.joined(separator: "\n\n")
+		// Filter out unsupported variables from content signature
+		let supportedVariables = variables.filter { $0.classification != .unsupported }
+		let parameters = supportedVariables.map(\.type).joined(separator: ", ")
+		let arguments = supportedVariables.map(\.accessExpression).joined(separator: ", ")
+		let contentSignature = parameters.isEmpty ? "@MainActor @Sendable () -> Content" : "@MainActor @Sendable (\(parameters)) -> Content"
 		let contentCall = "content(\(arguments))"
-	
+
 		return """
 			fileprivate struct \(name)<Content: View>: View {
 				\(environmentLines)
@@ -266,19 +320,20 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 			}
 			"""
 	}
-	
-	private static func makeWrapperCall(
+
+	static func makeWrapperCall(
 		named name: String,
 		variables: [EnvironmentVariable],
 		bodyExpression: ExprSyntax
 	) -> String {
-		let parameterList = variables
-			.map(\.name)
-			.joined(separator: ", ")
+		// Filter out unsupported variables from the call
+		let supportedVariables = variables.filter { $0.classification != .unsupported }
+		let parameterList = supportedVariables.map(\.name).joined(separator: ", ")
 		return "\(name)(content: { \(parameterList) in \(bodyExpression) })"
 	}
 }
 
+// MARK: - Supporting Types
 private struct EnvironmentVariable {
 	let name: String
 	let type: String
@@ -288,8 +343,10 @@ private struct EnvironmentVariable {
 		switch classification {
 		case .environmentObject:
 			"@EnvironmentObject private var \(name): \(type)"
-		case .environment, .defaultEnvironment:
+		case .environment:
 			"@Environment(\(type).self) private var \(name)"
+		case .unsupported:
+			"@available(*, unavailable, message: \"Unsupported type: \(type)\")\nprivate var \(name): \(type) { fatalError() }"
 		}
 	}
 
@@ -299,6 +356,15 @@ private struct EnvironmentVariable {
 private enum EnvironmentClassification {
 	case environmentObject
 	case environment
-	/// No explicit attribute was specified; defaults to @Environment with a warning
-	case defaultEnvironment
+	case unsupported
+
+	init(typeText: String) {
+		if typeText.contains("ObservableObject") {
+			self = .environmentObject
+		} else if typeText.contains("Observable") {
+			self = .environment
+		} else {
+			self = .unsupported
+		}
+	}
 }

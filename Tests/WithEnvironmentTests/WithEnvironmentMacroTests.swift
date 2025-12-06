@@ -1,269 +1,263 @@
 #if os(macOS) && canImport(SwiftUI)
-import Observation
 import SwiftSyntaxMacrosTestSupport
-import SwiftUI
 import Testing
-@testable import QizhMacroKit
 @testable import QizhMacroKitMacros
 
-@MainActor
-final class MacroStore: ObservableObject {}
-
-@Observable
-@MainActor
-final class MacroNavigation {}
-
-private let withEnvironmentMacros: [String: Macro.Type] = [
-	"WithEnvironment": WithEnvironmentGenerator.self
+// ProvidingEnvironment macro (experimental) - generates struct + call expression
+private let providingEnvironmentMacros: [String: Macro.Type] = [
+	"ProvidingEnvironment": ProvidingEnvironmentGenerator.self
 ]
 
-@Suite("WithEnvironment macro")
-struct WithEnvironmentMacroTests {
-	@Test("Expands environment accessors for observable types")
-	func expandsEnvironmentBindings() {
-		let hash = fnvSuffix(for: "Text(\"Hello\")")
+// WithEnv macro (production) - generates only struct
+private let withEnvMacros: [String: Macro.Type] = [
+	"WithEnv": WithEnvGenerator.self
+]
+
+@Suite("Environment macros")
+struct EnvironmentMacroTests {
+	
+	// MARK: - WithEnv (Production) Tests
+	
+	@Test("WithEnv expands to wrapper struct")
+	func withEnvExpandsToStruct() {
 		assertMacroExpansion(
 			"""
-			@WithEnvironment("Sample") {
-				@EnvironmentObject var store: MacroStore
-				@Environment var navigation: MacroNavigation
+			#WithEnv("Sample", { var store: MacroStore; var navigation: MacroNavigation })
+			""",
+			expandedSource:
+				"""
+				fileprivate struct _Sample<Content: View>: View {
+					@EnvironmentObject private var store: MacroStore
+				
+					@Environment(MacroNavigation.self) private var navigation
+				
+					let content: @MainActor @Sendable (MacroStore, MacroNavigation) -> Content
+				
+					var body: some View {
+						content(store, navigation)
+					}
+				}
+				""",
+			macros: withEnvMacros
+		)
+	}
+	
+	@Test("WithEnv with trailing closure")
+	func withEnvWithTrailingClosure() {
+		assertMacroExpansion(
+			"""
+			#WithEnv("Sample") {
+				var store: MacroStore
 			}
-			Text("Hello")
+			""",
+			expandedSource:
+				"""
+				fileprivate struct _Sample<Content: View>: View {
+					@EnvironmentObject private var store: MacroStore
+				
+					let content: @MainActor @Sendable (MacroStore) -> Content
+				
+					var body: some View {
+						content(store)
+					}
+				}
+				""",
+			macros: withEnvMacros
+		)
+	}
+	
+	@Test("WithEnv errors on missing closure")
+	func withEnvErrorsOnMissingClosure() {
+		assertMacroExpansion(
+			"""
+			#WithEnv("MissingClosure")
+			""",
+			expandedSource:
+				"""
+
+				""",
+			diagnostics: [
+				DiagnosticSpec(
+					message: "#WithEnv requires a closure with variable declarations",
+					line: 1,
+					column: 1,
+					severity: .error
+				)
+			],
+			macros: withEnvMacros
+		)
+	}
+	
+	@Test("WithEnv errors on empty variables")
+	func withEnvErrorsOnEmptyVariables() {
+		assertMacroExpansion(
+			"""
+			#WithEnv("Empty", { })
+			""",
+			expandedSource:
+				"""
+
+				""",
+			diagnostics: [
+				DiagnosticSpec(
+					message: "#WithEnv requires at least one variable declaration",
+					line: 1,
+					column: 19,
+					severity: .error
+				)
+			],
+			macros: withEnvMacros
+		)
+	}
+	
+	// MARK: - ProvidingEnvironment (Experimental) Tests
+	
+	@Test("ProvidingEnvironment expands with view expression")
+	func providingEnvironmentExpandsWithViewExpression() {
+		let hash = fnvSuffix(for: "{ Text(\"Hello\") }")
+		assertMacroExpansion(
+			"""
+			#ProvidingEnvironment("Sample", { var store: MacroStore; var navigation: MacroNavigation }) {
+				Text("Hello")
+			}
 			""",
 			expandedSource:
 				"""
 				fileprivate struct _Sample_\(hash)<Content: View>: View {
 					@EnvironmentObject private var store: MacroStore
-					
+
 					@Environment(MacroNavigation.self) private var navigation
-					
+
 					let content: @MainActor @Sendable (MacroStore, MacroNavigation) -> Content
-					
+
 					var body: some View {
 						content(store, navigation)
 					}
 				}
-				_Sample_\(hash)(content: { store, navigation in Text("Hello") })
+				_Sample_\(hash)(content: { store, navigation in { Text("Hello") } })
 				""",
-			macros: withEnvironmentMacros
+			macros: providingEnvironmentMacros
 		)
 	}
 	
-	@Test("Defaults to @Environment for variables without explicit attribute")
-	func defaultsToEnvironment() {
-		let hash = fnvSuffix(for: "Text(\"Default\")")
+	@Test("ProvidingEnvironment errors on missing trailing closure")
+	func providingEnvironmentErrorsOnMissingTrailingClosure() {
 		assertMacroExpansion(
 			"""
-			@WithEnvironment("Default") {
-				var navigation: MacroNavigation
-			}
-			Text("Default")
-			""",
-			expandedSource: 
-				"""
-				fileprivate struct _Default_\(hash)<Content: View>: View {
-					@Environment(MacroNavigation.self) private var navigation
-					
-					let content: @MainActor @Sendable (MacroNavigation) -> Content
-					
-					var body: some View {
-						content(navigation)
-					}
-				}
-				_Default_\(hash)(content: { navigation in Text("Default") })
-				""",
-			diagnostics: [
-				DiagnosticSpec(
-					message: "MacroNavigation requires @EnvironmentObject or @Environment attribute. Defaulting to @Environment.",
-					line: 3,
-					column: 5,
-					severity: .warning
-				)
-			],
-			macros: withEnvironmentMacros
-		)
-	}
-	
-	@Test("Errors on duplicate variable names")
-	func errorsOnDuplicateVariableNames() {
-		assertMacroExpansion(
-			"""
-			@WithEnvironment("Duplicate") {
-				var store: MacroStore
-				var store: MacroNavigation
-			}
-			Text("Duplicate")
+			#ProvidingEnvironment("MissingBody", { var store: MacroStore })
 			""",
 			expandedSource:
 				"""
-				Text("Duplicate")
+
+				""",
+			diagnostics: [
+				DiagnosticSpec(
+					message: "#ProvidingEnvironment must have a trailing closure with the view expression",
+					line: 1,
+					column: 1,
+					severity: .error
+				)
+			],
+			macros: providingEnvironmentMacros
+		)
+	}
+	
+	// MARK: - Shared Error Tests
+	
+	@Test("Errors on duplicate variable names")
+	func errorsOnDuplicateNames() {
+		assertMacroExpansion(
+			"""
+			#WithEnv("Duplicate", { var store: MacroStore; var store: MacroNavigation })
+			""",
+			expandedSource:
+				"""
+
 				""",
 			diagnostics: [
 				DiagnosticSpec(
 					message: "Duplicate variable name store",
-					line: 4,
-					column: 6,
+					line: 1,
+					column: 48,
 					severity: .error
 				)
 			],
-			macros: withEnvironmentMacros
+			macros: withEnvMacros
 		)
 	}
 	
-	@Test("Errors on duplicate variable types")
-	func errorsOnDuplicateVariableTypes() {
+	@Test("Errors on missing type annotation")
+	func errorsOnMissingType() {
 		assertMacroExpansion(
 			"""
-			@WithEnvironment("DuplicateType") {
-				var store1: MacroStore
-				var store2: MacroStore
-			}
-			Text("DuplicateType")
+			#WithEnv("MissingType", { var store })
 			""",
 			expandedSource:
 				"""
-				Text("DuplicateType")
-				""",
-			diagnostics: [
-				DiagnosticSpec(
-					message: "Duplicate environment variable type MacroStore",
-					line: 4,
-					column: 6,
-					severity: .error
-				)
-			],
-			macros: withEnvironmentMacros
-		)
-	}
-	
-	@Test("Errors on variables with initializers")
-	func errorsOnVariablesWithInitializers() {
-		assertMacroExpansion(
-			"""
-			@WithEnvironment("Initialized") {
-				var store: MacroStore = MacroStore()
-			}
-			Text("Initialized")
-			""",
-			expandedSource:
-				"""
-				Text("Initialized")
-				""",
-			diagnostics: [
-				DiagnosticSpec(
-					message: "Environment variable store cannot be initialized",
-					line: 3,
-					column: 6,
-					severity: .error
-				)
-			],
-			macros: withEnvironmentMacros
-		)
-	}
-	
-	@Test("Errors on missing type annotations")
-	func errorsOnMissingTypeAnnotations() {
-		assertMacroExpansion(
-			"""
-			@WithEnvironment("MissingType") {
-				var store
-			}
-			Text("MissingType")
-			""",
-			expandedSource:
-				"""
-				Text("MissingType")
+
 				""",
 			diagnostics: [
 				DiagnosticSpec(
 					message: "Environment variable store must declare a type",
-					line: 3,
-					column: 6,
-					severity: .error
-				)
-			],
-			macros: withEnvironmentMacros
-		)
-	}
-	
-	@Test("Errors on empty variable closure")
-	func errorsOnEmptyVariableClosure() {
-		assertMacroExpansion(
-			"""
-			@WithEnvironment("Empty") {
-			}
-			Text("Empty")
-			""",
-			expandedSource:
-				"""
-				Text("Empty")
-				""",
-			diagnostics: [
-				DiagnosticSpec(
-					message: "@WithEnvironment requires at least one variable declaration",
 					line: 1,
 					column: 27,
 					severity: .error
 				)
 			],
-			macros: withEnvironmentMacros
+			macros: withEnvMacros
 		)
 	}
 	
-	@Test("Expands environment accessors for mixed types with explicit attributes")
-	func expandsEnvironmentBindingsForMixedTypes() {
-		let hash = fnvSuffix(for: "Text(\"Mixed\")")
+	@Test("Errors on variables with initializers")
+	func errorsOnInitializedVariables() {
 		assertMacroExpansion(
 			"""
-			@WithEnvironment("Mixed") {
-				@EnvironmentObject var store: MacroStore
-				@Environment var navigation: MacroNavigation
-			}
-			Text("Mixed")
+			#WithEnv("Initialized", { var store: MacroStore = MacroStore() })
 			""",
 			expandedSource:
 				"""
-				fileprivate struct _Mixed_\(hash)<Content: View>: View {
-					@EnvironmentObject private var store: MacroStore
-					
-					@Environment(MacroNavigation.self) private var navigation
-					
-					let content: @MainActor @Sendable (MacroStore, MacroNavigation) -> Content
-					
-					var body: some View {
-						content(store, navigation)
-					}
-				}
-				_Mixed_\(hash)(content: { store, navigation in Text("Mixed") })
+
 				""",
-			macros: withEnvironmentMacros
+			diagnostics: [
+				DiagnosticSpec(
+					message: "Environment variable store cannot be initialized",
+					line: 1,
+					column: 27,
+					severity: .error
+				)
+			],
+			macros: withEnvMacros
 		)
 	}
 	
-	@Test("Expands environment accessors for escaped keyword variable names")
-	func expandsEnvironmentBindingsForEscapedKeywords() {
-		let hash = fnvSuffix(for: "Text(\"Escaped\")")
+	@Test("Warns about unsupported environment type")
+	func warnsOnUnsupportedType() {
 		assertMacroExpansion(
 			"""
-			@WithEnvironment("Escaped") {
-				@EnvironmentObject var `class`: MacroStore
-			}
-			Text("Escaped")
+			#WithEnv("Unsupported", { var count: Int })
 			""",
 			expandedSource:
 				"""
-				fileprivate struct _Escaped_\(hash)<Content: View>: View {
-					@EnvironmentObject private var `class`: MacroStore
-					
-					let content: @MainActor @Sendable (MacroStore) -> Content
-					
+				fileprivate struct _Unsupported<Content: View>: View {
+					@available(*, unavailable, message: "Unsupported type: Int")
+					private var count: Int { fatalError() }
+				
+					let content: @MainActor @Sendable () -> Content
+				
 					var body: some View {
-						content(`class`)
+						content()
 					}
 				}
-				_Escaped_\(hash)(content: { `class` in Text("Escaped") })
 				""",
-			macros: withEnvironmentMacros
+			diagnostics: [
+				DiagnosticSpec(
+					message: "Int is not Observable or ObservableObject. Remove its declaration.",
+					line: 1,
+					column: 27,
+					severity: .warning
+				)
+			],
+			macros: withEnvMacros
 		)
 	}
 }
@@ -272,7 +266,5 @@ private func fnvSuffix(for seed: String) -> String {
 	seed.fnv1aHashSuffix
 }
 #else
-
-#warning("These tests are only available when SwiftUI is available")
-
+#warning("These tests are available only when SwiftUI is available")
 #endif
