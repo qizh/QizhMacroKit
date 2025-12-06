@@ -85,6 +85,9 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 				continue
 			}
 
+			// Check for @EnvironmentObject or @Environment attributes on the variable declaration
+			let classification = Self.classifyFromAttributes(variableDecl.attributes)
+
 			for binding in variableDecl.bindings {
 				guard let pattern = binding.pattern.as(IdentifierPatternSyntax.self) else {
 					continue
@@ -128,12 +131,11 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 					continue
 				}
 
-				let classification = EnvironmentClassification(typeText: typeText)
 				if classification == .unsupported {
 					context.diagnose(.warning(
 						node: Syntax(binding),
-						message: "\(typeText) is not Observable or ObservableObject. Remove its declaration.",
-						id: .custom("withEnvironment.unsupportedType")
+						message: "\(typeText) requires @EnvironmentObject or @Environment attribute. Defaulting to @Environment.",
+						id: .custom("withEnvironment.missingAttribute")
 					))
 				}
 
@@ -144,6 +146,21 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 		}
 
 		return variables
+	}
+
+	private static func classifyFromAttributes(_ attributes: AttributeListSyntax) -> EnvironmentClassification {
+		for attribute in attributes {
+			guard let attr = attribute.as(AttributeSyntax.self) else { continue }
+			let attrName = attr.attributeName.description.trimmingCharacters(in: .whitespacesAndNewlines)
+			
+			if attrName == "EnvironmentObject" {
+				return .environmentObject
+			} else if attrName == "Environment" {
+				return .environment
+			}
+		}
+		// Default to .environment for plain variable declarations (most common case for @Observable types)
+		return .unsupported
 	}
 
 	private static func makeStructName(from explicit: String?, seed: String) -> String {
@@ -213,10 +230,8 @@ private struct EnvironmentVariable {
 		case .environment:
 			"@Environment(\(type).self) private var \(name)"
 		case .unsupported:
-			"""
-			@available(*, unavailable, message: "Unsupported environment variable type: \(type)")
-			private var \(name): \(type) {}
-			"""
+			// Default to @Environment for types without explicit attribute
+			"@Environment(\(type).self) private var \(name)"
 		}
 	}
 
@@ -227,14 +242,4 @@ private enum EnvironmentClassification {
 	case environmentObject
 	case environment
 	case unsupported
-
-	init(typeText: String) {
-		if typeText.contains("ObservableObject") {
-			self = .environmentObject
-		} else if typeText.contains("Observable") {
-			self = .environment
-		} else {
-			self = .unsupported
-		}
-	}
 }
