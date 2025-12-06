@@ -200,36 +200,31 @@ struct WithEnvironmentMacroTests {
 		)
 	}
 	
-	@Test("Errors on duplicate types")
-	func errorsOnDuplicateTypes() {
-		let hash = fnvSuffix(for: "{ Text(\"Hello\") }")
+	@Test("Expands environment accessors for mixed types with explicit attributes")
+	func expandsEnvironmentBindingsForMixedTypes() {
+		let hash = fnvSuffix(for: "Text(\"Mixed\")")
 		assertMacroExpansion(
 			"""
-			#WithEnvironment("DuplicateType", { var store1: MacroStore; var store2: MacroStore }) {
-				Text("Hello")
+			@WithEnvironment("Mixed") {
+				@EnvironmentObject var store: MacroStore
+				@Environment var navigation: MacroNavigation
 			}
 			""",
 			expandedSource:
 				"""
-				fileprivate struct _DuplicateType_\(hash)<Content: View>: View {
-					@EnvironmentObject private var store1: MacroStore
-
-					let content: @MainActor @Sendable (MacroStore) -> Content
-
+				fileprivate struct _Mixed_\(hash)<Content: View>: View {
+					@EnvironmentObject private var store: MacroStore
+					
+					@Environment(MacroNavigation.self) private var navigation
+					
+					let content: @MainActor @Sendable (MacroStore, MacroNavigation) -> Content
+					
 					var body: some View {
-						content(store1)
+						content(store, navigation)
 					}
 				}
-				_DuplicateType_\(hash)(content: { store1 in { Text("Hello") } })
+				_Mixed_\(hash)(content: { store, navigation in Text("Mixed") })
 				""",
-			diagnostics: [
-				DiagnosticSpec(
-					message: "Duplicate environment variable type MacroStore",
-					line: 1,
-					column: 61,
-					severity: .error
-				)
-			],
 			macros: withEnvironmentMacros
 		)
 	}
@@ -238,8 +233,8 @@ struct WithEnvironmentMacroTests {
 	func errorsOnInitializedVariables() {
 		assertMacroExpansion(
 			"""
-			#WithEnvironment("Initialized", { var store: MacroStore = MacroStore() }) {
-				Text("Hello")
+			@WithEnvironment("Escaped") {
+				@EnvironmentObject var `class`: MacroStore
 			}
 			""",
 			expandedSource:
@@ -260,13 +255,7 @@ struct WithEnvironmentMacroTests {
 }
 
 private func fnvSuffix(for seed: String) -> String {
-	var value: UInt64 = 0xcbf29ce484222325
-	for scalar in seed.unicodeScalars {
-		value ^= UInt64(scalar.value)
-		value = value &* 0x100000001b3
-	}
-	let hex = String(value, radix: 16, uppercase: true)
-	return String(hex.suffix(8))
+	seed.fnv1aHashSuffix
 }
 #else
 #warning("These tests are available only when SwiftUI is available")

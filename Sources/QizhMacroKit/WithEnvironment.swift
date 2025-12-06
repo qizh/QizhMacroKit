@@ -5,7 +5,7 @@
 //  Created by Qizh in December 2025.
 //
 
-/// Generates a helper wrapper view that injects environment values into the attached view expression.
+/// Generates a helper wrapper view that injects environment values into the wrapped view expression.
 ///
 /// The macro accepts an optional name and a closure with plain variable declarations. Each declaration
 /// describes an environment dependency that will be fetched inside the generated wrapper view and passed
@@ -21,8 +21,16 @@
 ///     Text("Hello")
 /// }
 /// ```
-// @freestanding(codeItem, names: arbitrary)
-// public macro WithEnvironment(
-// 	_ name: StringLiteralType? = nil,
-// 	_ environmentVariables: () -> Void
-// ) = #externalMacro(module: "QizhMacroKitMacros", type: "WithEnvironmentGenerator")
+
+@freestanding(codeItem, names: arbitrary)
+public macro WithEnvironmentItem(
+	_ name: StringLiteralType? = "GeneratedEnvironmentItem",
+	_ declarations: () -> Void
+) = #externalMacro(module: "QizhMacroKitMacros", type: "WithEnvironmentGenerator")
+
+@freestanding(declaration, names: arbitrary)
+public macro WithEnvironment(
+	_ name: StringLiteralType? = "GeneratedEnvironment",
+	_ declarations: () -> Void,
+	_ content: some View
+) = #externalMacro(module: "QizhMacroKitMacros", type: "WithEnvironmentGenerator")

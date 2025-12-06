@@ -54,30 +54,42 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 		}
 		
 		guard let variableClosure = variableClosureExpr?.as(ClosureExprSyntax.self) else {
-			context.diagnose(.error(
-				node: Syntax(node),
-				message: "@WithEnvironment requires a closure with variable declarations",
-				id: .custom("withEnvironment.missingEnvironmentVariables")
-			))
+			context.diagnose(
+				Diagnostic(
+					node: Syntax(node),
+					message: QizhMacroGeneratorDiagnostic(
+						message: "@WithEnvironment requires a closure with variable declarations",
+						id: "withEnvironment.missingEnvironmentVariables",
+						severity: .error
+					)
+				)
+			)
 			return []
 		}
 
-		guard let expression = viewExpr else {
-			context.diagnose(.error(
-				node: Syntax(node),
-				message: "@WithEnvironment must have a trailing closure with the view expression",
-				id: .custom("withEnvironment.invalidAttachment")
-			))
+		guard let expression = viewExpression else {
+			context.diagnose(
+				Diagnostic(
+					node: Syntax(node),
+					message: QizhMacroGeneratorDiagnostic(
+						message: "@WithEnvironment requires a view expression",
+						id: "withEnvironment.missingViewExpression",
+						severity: .error
+					)
+				)
+			)
 			return []
 		}
 
 		let variables = Self.parseVariables(in: variableClosure, context: context)
 		guard !variables.isEmpty else {
-			context.diagnose(.error(
-				node: Syntax(variableClosure),
-				message: "@WithEnvironment requires at least one variable declaration",
-				id: .custom("withEnvironment.missingVariables")
-			))
+			context.diagnose(
+				.error(
+					node: Syntax(variableClosure),
+					message: "@WithEnvironment requires at least one variable declaration",
+					id: "withEnvironment.missingVariables"
+				)
+			)
 			return []
 		}
 
@@ -93,8 +105,12 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 		)
 
 		return [
-			CodeBlockItemSyntax(item: .decl(DeclSyntax(stringLiteral: wrapperStruct))),
-			CodeBlockItemSyntax(item: .expr(ExprSyntax(stringLiteral: wrapperCall)))
+			DeclSyntax(stringLiteral: wrapperStruct),
+			DeclSyntax(stringLiteral: Self.makeWrapperCall(
+				named: structName,
+				variables: variables,
+				bodyExpression: expression
+			))
 		]
 	}
 
@@ -183,15 +199,16 @@ public struct WithEnvironmentGenerator: CodeItemMacro {
 		let suffix = Self.hash(seed: seed)
 		return "_\(prefix)_\(suffix)"
 	}
-
+	
+	/// Computes a hash of the seed string using the FNV-1a 64-bit hash algorithm.
+	/// - Parameter seed: The string to hash.
+	/// - Returns: An 8-character uppercase hexadecimal string derived from the hash.
+	/// - Note: FNV-1a (Fowler-Noll-Vo) is a non-cryptographic hash function known for its
+	///   speed and good distribution properties. The constants used are:
+	///   - `0xcbf29ce484222325`: The FNV-1a 64-bit offset basis (initial hash value)
+	///   - `0x100000001b3`: The FNV-1a 64-bit prime (multiplication factor)
 	private static func hash(seed: String) -> String {
-		var value: UInt64 = 0xcbf29ce484222325
-		for scalar in seed.unicodeScalars {
-			value ^= UInt64(scalar.value)
-			value = value &* 0x100000001b3
-		}
-		let hex = String(value, radix: 16, uppercase: true)
-		return String(hex.suffix(8))
+		seed.fnv1aHashSuffix
 	}
 
 	private static func makeWrapperStruct(

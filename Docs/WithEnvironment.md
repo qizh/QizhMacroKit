@@ -37,7 +37,7 @@ fileprivate struct _Sample_89ABCDEF<Content: View>: View {
 	}
 }
 
-_Sample_89ABCDEF { store, navigation in 
+_Sample_89ABCDEF(content: { store, navigation in 
 	Text("Hello")
-}
+})
 ```
