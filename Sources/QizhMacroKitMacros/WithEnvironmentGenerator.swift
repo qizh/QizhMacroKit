@@ -195,11 +195,13 @@ public struct WithEnvironmentGenerator: ExpressionMacro {
 
 	private static func classify(type: TypeSyntax) -> VariableKind {
 		let text = type.trimmedDescription
-		// Match types ending with "ObservableObject" or "Observable" (with optional generic parameters)
-		if text.hasSuffix("ObservableObject") || text.contains("ObservableObject<") {
+		// Match exactly "ObservableObject" or "Observable" (optionally with generic parameters)
+		let observableObjectPattern = #"^ObservableObject(\s*<.*>)?$"#
+		let observablePattern = #"^Observable(\s*<.*>)?$"#
+		if let _ = text.range(of: observableObjectPattern, options: .regularExpression) {
 			return .observableObject
 		}
-		if (text.hasSuffix("Observable") || text.contains("Observable<")) && !text.contains("ObservableObject") {
+		if let _ = text.range(of: observablePattern, options: .regularExpression) {
 			return .observable
 		}
 		return .unknown
