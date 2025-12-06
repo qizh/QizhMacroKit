@@ -7,17 +7,17 @@ import QizhMacroKitMacrosHelpers
 @testable import QizhMacroKitMacros
 
 private func deterministicSuffix(for seed: String) -> String {
-				var hash: UInt64 = 0xcbf29ce484222325
-				for byte in seed.utf8 {
-								hash ^= UInt64(byte)
-								hash &*= 0x100000001b3
-				}
-				let hex = String(hash, radix: 16, uppercase: true)
-				if hex.count >= 8 {
-								return String(hex.prefix(8))
-				} else {
-								return hex.padding(toLength: 8, withPad: "0", startingAt: 0)
-				}
+	var hash: UInt64 = 0xcbf29ce484222325
+	for byte in seed.utf8 {
+		hash ^= UInt64(byte)
+		hash &*= 0x100000001b3
+	}
+	let hex = String(hash, radix: 16, uppercase: true)
+	if hex.count >= 8 {
+		return String(hex.prefix(8))
+	} else {
+		return hex.padding(toLength: 8, withPad: "0", startingAt: 0)
+	}
 }
 
 /// Tests for the `WithEnvironment` macro covering validation and expansion.
@@ -223,8 +223,38 @@ struct WithEnvironmentMacroTests {
 		)
 	}
   
-        @Test("Reports initializer usage")
-        func initializerUsage() {
+	@Test("Reports initializer usage 1")
+	func initializerUsage1() {
+		assertMacroExpansion(
+			#"""
+			#WithEnvironment({
+				var store: DemoStoreObservableObject = .init()
+			}) {
+				EmptyView()
+			}
+			"""#,
+			expandedSource: #"""
+			#WithEnvironment({
+				var store: DemoStoreObservableObject = .init()
+			}) {
+				EmptyView()
+			}
+			"""#,
+			diagnostics: [
+				.init(
+					message: "Environment variables must not be initialized.",
+					line: 3,
+					column: 33,
+					severity: .error
+				)
+			],
+			macros: macros,
+			indentationWidth: .tab
+		)
+	}
+  
+        @Test("Reports initializer usage 2")
+        func initializerUsage2() {
                 assertMacroExpansion(
                         #"""
                         #WithEnvironment({
