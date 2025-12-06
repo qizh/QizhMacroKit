@@ -6,5 +6,5 @@
 @freestanding(codeItem, names: arbitrary)
 public macro WithEnvironment(
 	_ name: StringLiteralType? = nil,
-	_ environmentVariables: () -> Void
+	declarations: () -> Void
 ) = #externalMacro(module: "QizhMacroKitMacros", type: "WithEnvironmentGenerator")
