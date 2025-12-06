@@ -199,7 +199,7 @@ private enum EnvironmentMacroHelpers {
 					continue
 				}
 
-				let name = pattern.identifier.text.withBackticksTrimmed
+				let name = pattern.identifier.description // preserves backticks if present
 				if seenNames.contains(name) {
 					context.diagnose(
 						Diagnostic(
