@@ -6,8 +6,8 @@
 
 ```swift
 @WithEnvironment("Sample") {
-var store: MacroStore
-var navigation: MacroNavigation
+	var store: MacroStore
+	var navigation: MacroNavigation
 }
 Text("Hello")
 ```
