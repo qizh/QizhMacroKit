@@ -25,8 +25,8 @@ struct WithEnvironmentMacroTests {
 		assertMacroExpansion(
 			"""
 			@WithEnvironment("Sample") {
-				var store: MacroStore
-				var navigation: MacroNavigation
+				@EnvironmentObject var store: MacroStore
+				@Environment var navigation: MacroNavigation
 			}
 			Text("Hello")
 			""",
@@ -49,33 +49,32 @@ struct WithEnvironmentMacroTests {
 		)
 	}
 	
-	@Test("Warns about unsupported environment type")
-	func warnsOnUnsupportedType() {
-		let hash = fnvSuffix(for: "Text(\"Unsupported\")")
+	@Test("Defaults to @Environment for variables without explicit attribute")
+	func defaultsToEnvironment() {
+		let hash = fnvSuffix(for: "Text(\"Default\")")
 		assertMacroExpansion(
 			"""
-			@WithEnvironment("Unsupported") {
-				var count: Int
+			@WithEnvironment("Default") {
+				var navigation: MacroNavigation
 			}
-			Text("Unsupported")
+			Text("Default")
 			""",
 			expandedSource: 
 				"""
-				fileprivate struct _Unsupported_\(hash)<Content: View>: View {
-					@available(*, unavailable, message: "Unsupported environment variable type: Int")
-					private var count: Int { fatalError("Unsupported environment variable type: Int") }
+				fileprivate struct _Default_\(hash)<Content: View>: View {
+					@Environment(MacroNavigation.self) private var navigation
 					
-					let content: @MainActor @Sendable (Int) -> Content
+					let content: @MainActor @Sendable (MacroNavigation) -> Content
 					
 					var body: some View {
-						content(count)
+						content(navigation)
 					}
 				}
-				_Unsupported_\(hash)(content: { count in Text("Unsupported") })
+				_Default_\(hash)(content: { navigation in Text("Default") })
 				""",
 			diagnostics: [
 				DiagnosticSpec(
-					message: "Int is not Observable or ObservableObject. Remove its declaration.",
+					message: "MacroNavigation requires @EnvironmentObject or @Environment attribute. Defaulting to @Environment.",
 					line: 3,
 					column: 5,
 					severity: .warning
