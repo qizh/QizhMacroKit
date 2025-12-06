@@ -109,9 +109,9 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 		return [
 			DeclSyntax(stringLiteral: wrapperStruct),
 			DeclSyntax(stringLiteral: Self.makeWrapperCall(
-				structName: structName,
-				variableClosure: variableClosure,
-				viewExpression: expression
+				named: structName,
+				variables: variables,
+				bodyExpression: expression
 			))
 		]
 	}
