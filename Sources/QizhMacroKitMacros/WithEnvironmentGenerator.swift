@@ -227,6 +227,13 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 		return "_\(prefix)_\(suffix)"
 	}
 	
+	/// Computes a hash of the seed string using the FNV-1a 64-bit hash algorithm.
+	/// - Parameter seed: The string to hash.
+	/// - Returns: An 8-character uppercase hexadecimal string derived from the hash.
+	/// - Note: FNV-1a (Fowler-Noll-Vo) is a non-cryptographic hash function known for its
+	///   speed and good distribution properties. The constants used are:
+	///   - `0xcbf29ce484222325`: The FNV-1a 64-bit offset basis (initial hash value)
+	///   - `0x100000001b3`: The FNV-1a 64-bit prime (multiplication factor)
 	private static func hash(seed: String) -> String {
 		seed.fnv1aHashSuffix
 	}
