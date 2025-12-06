@@ -2,7 +2,7 @@
 //  WithEnvironmentGenerator.swift
 //  QizhMacroKit
 //
-//  Created by [Author] on [Date].
+//  Created by Serhii Shevchenko in December 2025.
 //
 import SwiftSyntax
 import SwiftSyntaxBuilder
