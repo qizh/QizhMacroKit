@@ -4,21 +4,7 @@ import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 @testable import QizhMacroKit
 @testable import QizhMacroKitMacros
-
-private func deterministicSuffix(for seed: String) -> String {
-        var hash: UInt64 = 0xcbf29ce484222325
-        for byte in seed.utf8 {
-                hash ^= UInt64(byte)
-                hash &*= 0x100000001b3
-        }
-        let hex = String(hash, radix: 16, uppercase: true)
-        if hex.count >= 8 {
-                return String(hex.prefix(8))
-        } else {
-                return hex.padding(toLength: 8, withPad: "0", startingAt: 0)
-        }
-}
-
+import QizhMacroKitMacrosHelpers
 /// Tests for the `WithEnvironment` macro covering validation and expansion.
 @Suite("WithEnvironment macro")
 struct WithEnvironmentMacroTests {
