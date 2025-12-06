@@ -10,6 +10,13 @@
 /// The macro accepts an optional name and a closure with plain variable declarations. Each declaration
 /// describes an environment dependency that will be fetched inside the generated wrapper view and passed
 /// into the wrapped expression.
+@freestanding(declaration, names: arbitrary)
+public macro WithEnvironment(
+	_ name: StringLiteralType? = "GeneratedEnvironment",
+	declarations: () -> Void
+) = #externalMacro(module: "QizhMacroKitMacros", type: "WithEnvironmentGenerator")
+
+
 ///
 /// Note: This macro uses the experimental CodeItemMacros feature which is not available
 /// in production Swift compilers. The macro declaration is commented out but the generator
@@ -21,11 +28,7 @@
 ///     Text("Hello")
 /// }
 /// ```
-@freestanding(codeItem, names: arbitrary)
-public macro WithEnvironment(
-	_ name: StringLiteralType? = nil,
-	declarations: () -> Void
-) = #externalMacro(module: "QizhMacroKitMacros", type: "WithEnvironmentGenerator")
+// @freestanding(codeItem, names: arbitrary)
 
 // @freestanding(codeItem)
 // public macro WithEnvironment(

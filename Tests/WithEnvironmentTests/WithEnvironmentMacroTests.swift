@@ -1,4 +1,5 @@
-#if os(macOS)
+#if os(macOS) && canImport(SwiftUI)
+import Observation
 import SwiftSyntaxMacrosTestSupport
 import Testing
 @testable import QizhMacroKitMacros
@@ -462,4 +463,8 @@ private func fnvSuffix(for seed: String) -> String {
 	let hex = String(value, radix: 16, uppercase: true)
 	return String(hex.suffix(8))
 }
+#else
+
+#warning("These tests are only available when SwiftUI is available")
+
 #endif
