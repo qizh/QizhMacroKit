@@ -13,5 +13,6 @@
 @freestanding(declaration, names: arbitrary)
 public macro WithEnvironment(
 	_ name: StringLiteralType? = "GeneratedEnvironment",
-	declarations: () -> Void
+	_ declarations: () -> Void,
+	_ content: some View
 ) = #externalMacro(module: "QizhMacroKitMacros", type: "WithEnvironmentGenerator")
