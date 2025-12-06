@@ -4,6 +4,7 @@
 //
 //  Created by Serhii Shevchenko in December 2025.
 //
+
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftCompilerPlugin
@@ -63,7 +64,7 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 					node: Syntax(node),
 					message: QizhMacroGeneratorDiagnostic(
 						message: "#WithEnvironment requires a closure with variable declarations",
-						id: .custom("withEnvironment.missingEnvironmentVariables"),
+						id: "withEnvironment.missingEnvironmentVariables",
 						severity: .error
 					)
 				)
@@ -77,29 +78,26 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 					node: Syntax(node),
 					message: QizhMacroGeneratorDiagnostic(
 						message: "#WithEnvironment requires a view expression",
-						id: .custom("withEnvironment.missingViewExpression"),
+						id: "withEnvironment.missingViewExpression",
 						severity: .error
 					)
 				)
 			)
 			return []
 		}
-
+		
 		let variables = Self.parseVariables(in: variableClosure, context: context)
 		guard !variables.isEmpty else {
 			context.diagnose(
-				Diagnostic(
+				.error(
 					node: Syntax(variableClosure),
-					message: QizhMacroGeneratorDiagnostic(
-						message: "#WithEnvironment requires at least one variable declaration",
-						id: .custom("withEnvironment.missingVariables"),
-						severity: .error
-					)
+					message: "@WithEnvironment requires at least one variable declaration",
+					id: "withEnvironment.missingVariables"
 				)
 			)
-			return []
+			return [CodeBlockItemSyntax(item: .codeBlockItem(codeItem))]
 		}
-
+		
 		let structName = Self.makeStructName(from: providedName, seed: expression.description)
 		let wrapperStruct = Self.makeWrapperStruct(
 			named: structName,
@@ -112,7 +110,7 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 			DeclSyntax(stringLiteral: wrapperStruct)
 		]
 	}
-
+	
 	private static func parseVariables(
 		in closure: ClosureExprSyntax,
 		context: some MacroExpansionContext
@@ -120,98 +118,83 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 		var seenNames = Set<String>()
 		var seenTypes = Set<String>()
 		var variables: [EnvironmentVariable] = []
-
+		
 		for statement in closure.statements {
 			guard let variableDecl = statement.item.as(VariableDeclSyntax.self) else {
 				continue
 			}
-
+			
 			for binding in variableDecl.bindings {
 				guard let pattern = binding.pattern.as(IdentifierPatternSyntax.self) else {
 					continue
 				}
-
+				
 				let name = pattern.identifier.text.withBackticksTrimmed
 				if seenNames.contains(name) {
 					context.diagnose(
-						Diagnostic(
+						.error(
 							node: Syntax(pattern),
-							message: QizhMacroGeneratorDiagnostic(
-								message: "Duplicate variable name \(name)",
-								id: .custom("withEnvironment.duplicateName"),
-								severity: .error
-							)
+							message: "Duplicate variable name \(name)",
+							id: "withEnvironment.duplicateName"
 						)
 					)
 					continue
 				}
-
+				
 				guard let type = binding.typeAnnotation?.type else {
 					context.diagnose(
-						Diagnostic(
+						.error(
 							node: Syntax(binding),
-							message: QizhMacroGeneratorDiagnostic(
-								message: "Environment variable \(name) must declare a type",
-								id: .custom("withEnvironment.missingType"),
-								severity: .error
-							)
+							message: "Environment variable \(name) must declare a type",
+							id: "withEnvironment.missingType"
 						)
 					)
 					continue
 				}
-
+				
 				let typeText = type.description.trimmingCharacters(in: .whitespacesAndNewlines)
 				if seenTypes.contains(typeText) {
 					context.diagnose(
-						Diagnostic(
+						.error(
 							node: Syntax(binding),
-							message: QizhMacroGeneratorDiagnostic(
-								message: "Duplicate environment variable type \(typeText)",
-								id: .custom("withEnvironment.duplicateType"),
-								severity: .error
-							)
+							message: "Duplicate environment variable type \(typeText)",
+							id: "withEnvironment.duplicateType"
 						)
 					)
 					continue
 				}
-
+				
 				if binding.initializer != nil {
 					context.diagnose(
-						Diagnostic(
+						.error(
 							node: Syntax(binding),
-							message: QizhMacroGeneratorDiagnostic(
-								message: "Environment variable \(name) cannot be initialized",
-								id: .custom("withEnvironment.initialized"),
-								severity: .error
-							)
+							message: "Environment variable \(name) cannot be initialized",
+							id: "withEnvironment.initialized"
 						)
 					)
 					continue
 				}
-
+				
 				let classification = EnvironmentClassification(typeText: typeText)
 				if classification == .unsupported {
 					context.diagnose(
-						Diagnostic(
+						.warning(
 							node: Syntax(binding),
-							message: QizhMacroGeneratorDiagnostic(
-								message: "\(typeText) is not Observable or ObservableObject. Remove its declaration.",
-								id: .custom("withEnvironment.unsupportedType"),
-								severity: .warning
-							)
+							message: "\(typeText) is not Observable or ObservableObject. Remove its declaration.",
+							id: "withEnvironment.unsupportedType"
 						)
 					)
 				}
-
+				
 				variables.append(EnvironmentVariable(name: name, type: typeText, classification: classification))
 				seenNames.insert(name)
 				seenTypes.insert(typeText)
 			}
 		}
-
+		
 		return variables
 	}
-
+	
 	private static func makeStructName(from explicit: String?, seed: String) -> String {
 		let prefix: String
 		if let explicit, !explicit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -219,11 +202,11 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 		} else {
 			prefix = "WithEnvironment"
 		}
-
+	
 		let suffix = Self.hash(seed: seed)
 		return "_\(prefix)_\(suffix)"
 	}
-
+	
 	private static func hash(seed: String) -> String {
 		var value: UInt64 = 0xcbf29ce484222325
 		for scalar in seed.unicodeScalars {
@@ -233,17 +216,23 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 		let hex = String(value, radix: 16, uppercase: true)
 		return String(hex.suffix(8))
 	}
-
+	
 	private static func makeWrapperStruct(
 		named name: String,
 		variables: [EnvironmentVariable]
 	) -> String {
-		let environmentLines = variables.map { $0.propertyDeclaration }.joined(separator: "\n\n")
-		let parameters = variables.map(\.type).joined(separator: ", ")
-		let arguments = variables.map(\.accessExpression).joined(separator: ", ")
+		let environmentLines = variables
+			.map { $0.propertyDeclaration }
+			.joined(separator: "\n\n")
+		let parameters = variables
+			.map(\.type)
+			.joined(separator: ", ")
+		let arguments = variables
+			.map(\.accessExpression)
+			.joined(separator: ", ")
 		let contentSignature = "@MainActor @Sendable (\(parameters)) -> Content"
 		let contentCall = "content(\(arguments))"
-
+	
 		return """
 			fileprivate struct \(name)<Content: View>: View {
 				\(environmentLines)
@@ -256,13 +245,15 @@ public struct WithEnvironmentGenerator: DeclarationMacro {
 			}
 			"""
 	}
-
+	
 	private static func makeWrapperCall(
 		named name: String,
 		variables: [EnvironmentVariable],
 		bodyExpression: ExprSyntax
 	) -> String {
-		let parameterList = variables.map(\.name).joined(separator: ", ")
+		let parameterList = variables
+			.map(\.name)
+			.joined(separator: ", ")
 		return "\(name)(content: { \(parameterList) in \(bodyExpression) })"
 	}
 }
@@ -271,7 +262,7 @@ private struct EnvironmentVariable {
 	let name: String
 	let type: String
 	let classification: EnvironmentClassification
-
+	
 	var propertyDeclaration: String {
 		switch classification {
 		case .environmentObject:
@@ -282,7 +273,7 @@ private struct EnvironmentVariable {
 			"@available(*, unavailable, message: \"Unsupported environment variable type: \(type)\")\nprivate var \(name): \(type) { fatalError(\"Unsupported environment variable type: \(type)\") }"
 		}
 	}
-
+	
 	var accessExpression: String { name }
 }
 
@@ -290,7 +281,7 @@ private enum EnvironmentClassification {
 	case environmentObject
 	case environment
 	case unsupported
-
+ 
 	init(typeText: String) {
 		if typeText.contains("ObservableObject") {
 			self = .environmentObject

@@ -12,6 +12,6 @@
 /// into the wrapped expression.
 @freestanding(declaration, names: arbitrary)
 public macro WithEnvironment(
-	_ name: StringLiteralType? = nil,
+	_ name: StringLiteralType? = "GeneratedEnvironment",
 	declarations: () -> Void
 ) = #externalMacro(module: "QizhMacroKitMacros", type: "WithEnvironmentGenerator")
