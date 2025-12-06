@@ -53,35 +53,35 @@ struct WithEnvironmentMacroTests {
 	func warnsOnUnsupportedType() {
 		let hash = fnvSuffix(for: "Text(\"Unsupported\")")
 		assertMacroExpansion(
-		"""
-		@WithEnvironment("Unsupported") {
-			var count: Int
-		}
-		Text("Unsupported")
-		""",
-		expandedSource:
-		"""
-		fileprivate struct _Unsupported_\(hash)<Content: View>: View {
-			@available(*, unavailable, message: "Unsupported environment variable type: Int")
-			private var count: Int { fatalError("Unsupported environment variable type: Int") }
-			
-			let content: @MainActor @Sendable (Int) -> Content
-			
-			var body: some View {
-				content(count)
+			"""
+			@WithEnvironment("Unsupported") {
+				var count: Int
 			}
-		}
-		_Unsupported_\(hash)(content: { count in Text("Unsupported") })
-		""",
-		diagnostics: [
-	DiagnosticSpec(
-	message: "Int is not Observable or ObservableObject. Remove its declaration.",
-	line: 3,
-	column: 5,
-	severity: .warning
-	)
-		],
-		macros: withEnvironmentMacros
+			Text("Unsupported")
+			""",
+			expandedSource: 
+				"""
+				fileprivate struct _Unsupported_\(hash)<Content: View>: View {
+					@available(*, unavailable, message: "Unsupported environment variable type: Int")
+					private var count: Int { fatalError("Unsupported environment variable type: Int") }
+					
+					let content: @MainActor @Sendable (Int) -> Content
+					
+					var body: some View {
+						content(count)
+					}
+				}
+				_Unsupported_\(hash)(content: { count in Text("Unsupported") })
+				""",
+			diagnostics: [
+				DiagnosticSpec(
+					message: "Int is not Observable or ObservableObject. Remove its declaration.",
+					line: 3,
+					column: 5,
+					severity: .warning
+				)
+			],
+			macros: withEnvironmentMacros
 		)
 	}
 }
