@@ -31,9 +31,15 @@ let package = Package(
 	dependencies: [
 		.package(
 			url: "https://github.com/swiftlang/swift-syntax.git",
-			/// Was `"602.0.0" ..< "700.0.0"`
-			/// Was `exact: "602.0.0"`
-			.upToNextMajor(from: "602.0.0")
+			/// Pinned to match Xcode 26.2 / Swift 6.2 toolchain
+			/// to avoid `_SwiftSyntaxCShims` resolution errors
+			/// ## Changelog
+			/// - `"602.0.0" ..< "700.0.0"`
+			/// - `exact: "602.0.0"`
+			/// - `.upToNextMajor(from: "602.0.0")`
+			/// - `exact: "602.1.0"`
+			/// - `branch: "release/6.2"` (matches Xcode 26.2 / Swift 6.2)
+			from: "602.0.0"
 		),
 		// .package(url: "https://github.com/apple/swift-collections.git", .upToNextMajor(from: "1.2.0")),
 		/*
@@ -118,3 +124,4 @@ let package = Package(
 		.v6,
 	]
 )
+
