@@ -1,5 +1,5 @@
 //
-//  Stringify.swift
+//  OptionSet.swift
 //  QizhMacroKit
 //
 //  Created by Serhii Shevchenko on 22.08.2025.
