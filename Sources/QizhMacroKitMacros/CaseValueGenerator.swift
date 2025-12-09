@@ -9,6 +9,7 @@ import SwiftSyntax
 import SwiftDiagnostics
 import SwiftSyntaxMacros
 import SwiftSyntaxBuilder
+import Foundation
 
 public struct CaseValueGenerator: MemberMacro {
 	public static func expansion(
@@ -31,6 +32,7 @@ public struct CaseValueGenerator: MemberMacro {
 		
 		let members = enumDecl.memberBlock.members
 		var computedProperties: [DeclSyntax] = []
+		var propertyNames: Set<String> = []
 		
 		let allModifiers = enumDecl.modifiers.map(\.name.text)
 		let accessControlSet: Set<String> = ["open", "public", "package", "internal", "fileprivate", "private"]
@@ -122,7 +124,7 @@ public struct CaseValueGenerator: MemberMacro {
 					
 					/// Use case name only when parameter name is the same
 					
-					let propertyName: String
+					var propertyName: String
 					if caseNameText.localizedLowercase == parameterName.text.localizedLowercase {
 						propertyName = caseNameText
 						
@@ -134,7 +136,19 @@ public struct CaseValueGenerator: MemberMacro {
 							)
 						)
 					} else {
-						propertyName = "\(caseNameText)\(parameterName.text)".toCamelCase
+						/// ## What's `_` for?
+						/// `_` is here to avoid cases where both `caseNameText` and
+						/// `parameterName.text` are lowercased.
+						/// ```swift
+						/// let wrong = ("foo" + "bar").toCamelCase
+						/// // wrong = "foobar".toCamelCase
+						/// // wrong = "foobar"
+						///
+						/// let correct = ("foo" + "_" + "bar").toCamelCase
+						/// // correct = "foo_bar".toCamelCase
+						/// // correct = "fooBar"
+						/// ```
+						propertyName = "\(caseNameText)_\(parameterName.text)".toCamelCase
 						
 						/*
 						context.diagnose(
@@ -147,11 +161,28 @@ public struct CaseValueGenerator: MemberMacro {
 						*/
 					}
 					
+					if propertyNames.contains(propertyName) {
+						let typeName = parameterTypeName
+							.replacing(/[^a-zA-Z0-9.]+/, with: "_")
+							.trimmingCharacters(in: CharacterSet(charactersIn: "_"))
+						
+						propertyName = "\(propertyName)_\(typeName)".toCamelCase
+					}
+					
+					if propertyNames.contains(propertyName) {
+						var number: UInt = 0
+						repeat {
+							number += 1
+						} while propertyNames.contains("\(propertyName)\(number)")
+						propertyName += "\(number)"
+					}
+					
 					/// Output generation
 					
 					let parametersList = parametersString(for: index, of: totalParameters)
 					
 					let addedProperty: DeclSyntax = """
+						/// `\(raw: parameterTypeName)` value of `\(raw: parameterName.text)` parameter in `.\(raw: caseNameText)` case.
 						\(raw: modifiersString)var \(raw: propertyName): \(raw: parameterTypeName) {
 							switch self {
 							case .\(raw: caseNameText)(\(raw: parametersList)): \(raw: Self.defaultValueName)
@@ -161,6 +192,7 @@ public struct CaseValueGenerator: MemberMacro {
 						"""
 					
 					computedProperties.append(addedProperty)
+					propertyNames.insert(propertyName)
 				}
 			}
 		}
