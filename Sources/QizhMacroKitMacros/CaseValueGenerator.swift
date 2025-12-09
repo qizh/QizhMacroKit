@@ -182,7 +182,7 @@ public struct CaseValueGenerator: MemberMacro {
 					let parametersList = parametersString(for: index, of: totalParameters)
 					
 					let addedProperty: DeclSyntax = """
-						/// `\(raw: parameterTypeName)` value of `\(raw: parameterName.text)` parameter in `.\(raw: caseNameText)` case 
+						/// `\(raw: parameterTypeName)` value of `\(raw: parameterName.text)` parameter in `.\(raw: caseNameText)` case.
 						\(raw: modifiersString)var \(raw: propertyName): \(raw: parameterTypeName) {
 							switch self {
 							case .\(raw: caseNameText)(\(raw: parametersList)): \(raw: Self.defaultValueName)

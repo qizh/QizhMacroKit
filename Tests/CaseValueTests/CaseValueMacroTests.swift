@@ -60,7 +60,7 @@ struct CaseValueMacroTests {
 			}
 			
 			let i: Int = 42
-			let s: String = "fourty two"
+			let s: String = "forty two"
 			let v1 = Em.foo(i)
 			let v2 = Em.FOO(s)
 			let v3 = Em.Foo(s)
