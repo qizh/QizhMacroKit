@@ -32,7 +32,7 @@ public struct CaseValueGenerator: MemberMacro {
 		
 		let members = enumDecl.memberBlock.members
 		var computedProperties: [DeclSyntax] = []
-		var proprtyNames: Set<String> = []
+		var propertyNames: Set<String> = []
 		
 		let allModifiers = enumDecl.modifiers.map(\.name.text)
 		let accessControlSet: Set<String> = ["open", "public", "package", "internal", "fileprivate", "private"]
@@ -40,7 +40,6 @@ public struct CaseValueGenerator: MemberMacro {
 		let modifiersString: String = accessModifiers.isEmpty
 			? ""
 			: accessModifiers.joined(separator: " ") + " "
-		
 		
 		for member in members {
 			guard let enumCaseDecl = member.decl.as(EnumCaseDeclSyntax.self) else {
@@ -162,7 +161,7 @@ public struct CaseValueGenerator: MemberMacro {
 						*/
 					}
 					
-					if proprtyNames.contains(propertyName) {
+					if propertyNames.contains(propertyName) {
 						let typeName = parameterTypeName
 							.replacing(/[^a-zA-Z0-9.]+/, with: "_")
 							.trimmingCharacters(in: CharacterSet(charactersIn: "_"))
@@ -170,11 +169,11 @@ public struct CaseValueGenerator: MemberMacro {
 						propertyName = "\(propertyName)_\(typeName)".toCamelCase
 					}
 					
-					if proprtyNames.contains(propertyName) {
+					if propertyNames.contains(propertyName) {
 						var number: UInt = 0
 						repeat {
 							number += 1
-						} while proprtyNames.contains("\(propertyName)\(number)")
+						} while propertyNames.contains("\(propertyName)\(number)")
 						propertyName += "\(number)"
 					}
 					
@@ -193,7 +192,7 @@ public struct CaseValueGenerator: MemberMacro {
 						"""
 					
 					computedProperties.append(addedProperty)
-					proprtyNames.insert(propertyName)
+					propertyNames.insert(propertyName)
 				}
 			}
 		}
