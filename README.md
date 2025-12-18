@@ -183,11 +183,20 @@ QizhMacroKit/
 │   ├── QizhMacroKitMacros/     # Macro implementations (SwiftSyntax)
 │   │   └── Helpers/            # String manipulation utilities
 │   └── QizhMacroKitClient/     # Example usage
-├── Tests/                      # Test suites
+├── Tests/
+│   ├── CaseNameTests/          # @CaseName macro tests
+│   ├── CaseValueTests/         # @CaseValue macro tests
+│   ├── IsCaseTests/            # @IsCase macro tests
+│   ├── IsNotCaseTests/         # @IsNotCase macro tests
+│   ├── OptionSetTests/         # @OptionSet macro tests
+│   ├── StringifyTests/         # #stringify / #dictionarify tests
+│   ├── DiagnosticTests/        # Diagnostic types tests
+│   └── HelperTests/            # String helper extension tests
 ├── Docs/                       # Documentation
 ├── Package.swift               # SPM manifest
 ├── KNOWN_ISSUES.md             # Current limitations
 ├── TODO.md                     # Roadmap
+├── AGENTS.md                   # Agent instructions
 └── README.md                   # This file
 ```
 
