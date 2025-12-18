@@ -59,6 +59,7 @@ QizhMacroKit/
 | `@IsNotCase` | Generates boolean `isNot<CaseName>` properties for enum cases |
 | `@OptionSet<RawType>` | Creates an `OptionSet` from a struct containing a nested `Options` enum |
 | `#stringify` | Converts expressions to their string representation |
+| `#dictionarify` | Returns a dictionary element mapping the expression source text to its evaluated value |
 
 ## Build and Test Commands
 
