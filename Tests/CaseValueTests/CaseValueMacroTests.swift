@@ -31,6 +31,7 @@ struct CaseValueMacroTests {
 	func extractsMultipleParameters() {
 		@CaseValue enum Point { case xy(x: Int, y: Int) }
 		let p = Point.xy(x: 10, y: 20)
+		/// Single-case enum: properties are non-optional
 		#expect(p.xyX == 10)
 		#expect(p.xyY == 20)
 	}
@@ -53,9 +54,8 @@ struct CaseValueMacroTests {
 		@CaseValue enum Handler { case action(handler: () -> Void) }
 		var called = false
 		let h = Handler.action { called = true }
-		if let action = h.actionHandler {
-			action()
-		}
+		/// Single-case enum: property is non-optional
+		h.actionHandler()
 		#expect(called)
 	}
 	
@@ -137,6 +137,7 @@ struct CaseValueMacroTests {
 		func multipleSameTypeUnnamedParameters() {
 			@CaseValue enum Pair { case values(Int, Int) }
 			let p = Pair.values(1, 2)
+			/// Single-case enum: properties are non-optional
 			#expect(p.valuesInt0 == 1)
 			#expect(p.valuesInt1 == 2)
 		}
@@ -173,9 +174,9 @@ struct CaseValueMacroTests {
 			)
 		}
 		
-		/// Tests expansion respects access modifiers.
-		@Test("Expansion respects public access modifier")
-		func expansionRespectsPublicAccess() {
+		/// Tests expansion respects access modifiers for single-case enum.
+		@Test("Expansion respects public access modifier (single-case)")
+		func expansionRespectsPublicAccessSingleCase() {
 			assertMacroExpansion(
 				"""
 				@CaseValue
@@ -183,10 +184,31 @@ struct CaseValueMacroTests {
 				""",
 				expandedSource: """
 				public enum Token { case value(Int)
-					/// `Int?` value of `Int` parameter in `.value` case.
-					public var value: Int? {
+					/// `Int` value of `Int` parameter in `.value` case.
+					public var value: Int {
 						switch self {
 						case .value(let value): value
+						}
+					}}
+				""",
+				macros: macros
+			)
+		}
+		
+		/// Tests expansion for multi-case enum produces optional types.
+		@Test("Expansion produces optional types for multi-case enum")
+		func expansionProducesOptionalForMultiCase() {
+			assertMacroExpansion(
+				"""
+				@CaseValue
+				enum Result { case success(Int), failure }
+				""",
+				expandedSource: """
+				enum Result { case success(Int), failure
+					/// `Int?` value of `Int` parameter in `.success` case.
+					var success: Int? {
+						switch self {
+						case .success(let value): value
 						default: nil
 						}
 					}}

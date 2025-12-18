@@ -34,6 +34,14 @@ public struct CaseValueGenerator: MemberMacro {
 		var computedProperties: [DeclSyntax] = []
 		var propertyNames: Set<String> = []
 		
+		/// Count total enum cases to determine if we need optional types
+		/// Single-case enums get non-optional properties; multi-case enums get optional
+		let totalEnumCases = members
+			.compactMap { $0.decl.as(EnumCaseDeclSyntax.self) }
+			.flatMap(\.elements)
+			.count
+		let isSingleCaseEnum = totalEnumCases == 1
+		
 		let allModifiers = enumDecl.modifiers.map(\.name.text)
 		let accessControlSet: Set<String> = ["open", "public", "package", "internal", "fileprivate", "private"]
 		let accessModifiers = allModifiers.filter { accessControlSet.contains($0) }
@@ -97,12 +105,13 @@ public struct CaseValueGenerator: MemberMacro {
 						}
 					}
 					
-					/// Make output parameter `Optional`
+					/// Make output parameter `Optional` (unless single-case enum)
 					
 					var parameterTypeName: String = originalType.description
 						.trimmingCharacters(in: .whitespacesAndNewlines)
 					
-					if originalType.as(FunctionTypeSyntax.self) != nil {
+					let isFunctionType = originalType.as(FunctionTypeSyntax.self) != nil
+					if isFunctionType {
 						context.diagnose(
 							.note(
 								node: Syntax(node),
@@ -118,7 +127,10 @@ public struct CaseValueGenerator: MemberMacro {
 						originalType.as(OptionalTypeSyntax.self) != nil
 					|| 	originalType.as(IdentifierTypeSyntax.self)?.name.text == "Optional"
 					
-					if !isParameterOptional {
+					/// For single-case enums, keep the original type (non-optional)
+					/// For multi-case enums, wrap in Optional unless already optional
+					let useOptionalType = !isSingleCaseEnum && !isParameterOptional
+					if useOptionalType {
 						parameterTypeName = "\(parameterTypeName)?"
 					}
 					
@@ -181,15 +193,29 @@ public struct CaseValueGenerator: MemberMacro {
 					
 					let parametersList = parametersString(for: index, of: totalParameters)
 					
-					let addedProperty: DeclSyntax = """
-						/// `\(raw: parameterTypeName)` value of `\(raw: parameterName.text)` parameter in `.\(raw: caseNameText)` case.
-						\(raw: modifiersString)var \(raw: propertyName): \(raw: parameterTypeName) {
-							switch self {
-							case .\(raw: caseNameText)(\(raw: parametersList)): \(raw: Self.defaultValueName)
-							default: nil
+					let addedProperty: DeclSyntax
+					if isSingleCaseEnum {
+						/// Single-case enum: non-optional property, no default case
+						addedProperty = """
+							/// `\(raw: parameterTypeName)` value of `\(raw: parameterName.text)` parameter in `.\(raw: caseNameText)` case.
+							\(raw: modifiersString)var \(raw: propertyName): \(raw: parameterTypeName) {
+								switch self {
+								case .\(raw: caseNameText)(\(raw: parametersList)): \(raw: Self.defaultValueName)
+								}
 							}
-						}
-						"""
+							"""
+					} else {
+						/// Multi-case enum: optional property with default case
+						addedProperty = """
+							/// `\(raw: parameterTypeName)` value of `\(raw: parameterName.text)` parameter in `.\(raw: caseNameText)` case.
+							\(raw: modifiersString)var \(raw: propertyName): \(raw: parameterTypeName) {
+								switch self {
+								case .\(raw: caseNameText)(\(raw: parametersList)): \(raw: Self.defaultValueName)
+								default: nil
+								}
+							}
+							"""
+					}
 					
 					computedProperties.append(addedProperty)
 					propertyNames.insert(propertyName)
