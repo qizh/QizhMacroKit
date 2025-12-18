@@ -7,8 +7,10 @@
 
 import SwiftSyntax
 import SwiftSyntaxBuilder
-import SwiftCompilerPlugin
 import SwiftDiagnostics
+#if canImport(SwiftCompilerPlugin)
+import SwiftCompilerPlugin
+#endif
 
 // MARK: Stringify
 
