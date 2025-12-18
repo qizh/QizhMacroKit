@@ -8,9 +8,6 @@
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftDiagnostics
-#if canImport(SwiftCompilerPlugin)
-import SwiftCompilerPlugin
-#endif
 
 // MARK: Stringify
 
