@@ -1,6 +1,6 @@
 # Known Issues
 
-> Last Updated: November 27, 2025
+> Last Updated: December 18, 2025
 
 This document lists known limitations and issues in QizhMacroKit.
 
@@ -84,6 +84,23 @@ The `escapedSwiftIdentifier` helper recognizes most common Swift keywords, but m
 - Attributes that can be used as identifiers
 
 **Workaround**: When using case names that cause issues, explicitly escape them with backticks in your source code.
+
+---
+
+### Test Coverage Limitations
+
+#### Untestable Code Paths
+
+**Status**: By Design  
+**Affected**: `_QizhMacroKitMacro.swift`
+
+The macro plugin entry point (`_QizhMacroKitMacro.swift`) registers macros with the Swift compiler via the `CompilerPlugin` protocol. This code:
+
+- Is invoked by the Swift compiler during compilation, not at runtime
+- Cannot be directly tested via unit tests
+- Appears as 0% coverage in code coverage reports
+
+This is expected behavior for Swift macro plugins. The actual macro implementations (generators) are fully testable and covered.
 
 ---
 

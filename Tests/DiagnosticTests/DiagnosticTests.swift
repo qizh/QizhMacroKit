@@ -158,6 +158,64 @@ struct DiagnosticTests {
 		}
 	}
 	
+	// MARK: - Diagnostic Extension Tests
+	
+	@Suite("Diagnostic Extensions")
+	struct DiagnosticExtensionTests {
+		
+		@Test("Creates error diagnostic")
+		func createsErrorDiagnostic() {
+			let source: SourceFileSyntax = "let x = 1"
+			let diagnostic = Diagnostic.error(
+				node: source,
+				message: "Test error",
+				id: .invalidUsage
+			)
+			
+			#expect(diagnostic.message == "Test error")
+			#expect(diagnostic.diagMessage.severity == .error)
+		}
+		
+		@Test("Creates warning diagnostic")
+		func createsWarningDiagnostic() {
+			let source: SourceFileSyntax = "let x = 1"
+			let diagnostic = Diagnostic.warning(
+				node: source,
+				message: "Test warning",
+				id: .noEnumCases
+			)
+			
+			#expect(diagnostic.message == "Test warning")
+			#expect(diagnostic.diagMessage.severity == .warning)
+		}
+		
+		@Test("Creates note diagnostic")
+		func createsNoteDiagnostic() {
+			let source: SourceFileSyntax = "let x = 1"
+			let diagnostic = Diagnostic.note(
+				node: source,
+				message: "Test note",
+				id: .custom("noteID")
+			)
+			
+			#expect(diagnostic.message == "Test note")
+			#expect(diagnostic.diagMessage.severity == .note)
+		}
+		
+		@Test("Creates remark diagnostic")
+		func createsRemarkDiagnostic() {
+			let source: SourceFileSyntax = "let x = 1"
+			let diagnostic = Diagnostic.remark(
+				node: source,
+				message: "Test remark",
+				id: .custom("remarkID")
+			)
+			
+			#expect(diagnostic.message == "Test remark")
+			#expect(diagnostic.diagMessage.severity == .remark)
+		}
+	}
+	
 	// MARK: - FixMessage Tests
 	
 	@Suite("FixMessage")

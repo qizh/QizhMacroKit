@@ -25,6 +25,8 @@ QizhMacroKit/
 ├── Tests/
 │   ├── CaseNameTests/
 │   ├── CaseValueTests/
+│   ├── DiagnosticTests/
+│   ├── HelperTests/
 │   ├── IsCaseTests/
 │   ├── IsNotCaseTests/
 │   ├── OptionSetTests/
@@ -156,6 +158,29 @@ For each major repository component:
 - Run all tests to ensure none fail
 - Generate and post a report
 - Update the PR description with the results
+
+### Auto-Commit Policy
+
+Automatically commit changes (with a generated commit title and description) when **ALL** of the following conditions are met:
+
+1. **Task successfully finished** — The requested work is complete
+2. **Code is documented** — All added/updated code has proper documentation
+3. **Code is tested** — All added/updated code is covered by tests
+4. **Tests pass** — All tests run successfully (`swift test` exits with code 0)
+5. **Documentation updated** — Relevant `.md` files are updated (README, Docs/, KNOWN_ISSUES, etc.)
+
+Commit message format:
+```
+<concise title summarizing the change>
+
+<detailed description of what was changed and why>
+
+## Changes
+- List of specific changes made
+
+## Testing
+- Summary of test results
+```
 
 ---
 

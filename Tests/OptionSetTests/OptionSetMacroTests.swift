@@ -217,5 +217,111 @@ struct OptionSetMacroTests {
 			indentationWidth: .spaces(2)
 		)
 	}
+	
+	@Test("Expansion with custom optionsName argument")
+	func testExpansionWithCustomOptionsName() {
+		assertMacroExpansion(
+			"""
+			@OptionSet<UInt8>(optionsName: "Flags")
+			struct Permissions {
+				private enum Flags: Int {
+					case read
+					case write
+				}
+			}
+			""",
+			expandedSource: """
+				struct Permissions {
+					private enum Flags: Int {
+						case read
+						case write
+					}
+
+					typealias RawValue = UInt8
+
+					var rawValue: RawValue
+
+					init() {
+						self.rawValue = 0
+					}
+
+					init(rawValue: RawValue) {
+						self.rawValue = rawValue
+					}
+
+					static let read: Self =
+						Self(rawValue: 1 << Flags.read.rawValue)
+
+					static let write: Self =
+						Self(rawValue: 1 << Flags.write.rawValue)
+				}
+
+				extension Permissions: OptionSet {
+				}
+				""",
+			macros: macros,
+			indentationWidth: .spaces(2)
+		)
+	}
+	
+	@Test("Expansion fails with non-string literal optionsName")
+	func testExpansionFailsWithNonStringLiteralOptionsName() {
+		assertMacroExpansion(
+			"""
+			@OptionSet<UInt8>(optionsName: someVariable)
+			struct Permissions {
+				private enum Options: Int {
+					case read
+				}
+			}
+			""",
+			expandedSource: """
+				struct Permissions {
+					private enum Options: Int {
+						case read
+					}
+				}
+				""",
+			diagnostics: [
+				DiagnosticSpec(
+					message: "'OptionSet' macro argument optionsName must be a string literal",
+					line: 1,
+					column: 31
+				)
+			],
+			macros: macros,
+			indentationWidth: .spaces(2)
+		)
+	}
+	
+	@Test("Expansion fails when custom optionsName enum is missing")
+	func testExpansionFailsWhenCustomOptionsEnumMissing() {
+		assertMacroExpansion(
+			"""
+			@OptionSet<UInt8>(optionsName: "CustomOptions")
+			struct Permissions {
+				private enum Options: Int {
+					case read
+				}
+			}
+			""",
+			expandedSource: """
+				struct Permissions {
+					private enum Options: Int {
+						case read
+					}
+				}
+				""",
+			diagnostics: [
+				DiagnosticSpec(
+					message: "'OptionSet' macro requires nested options enum 'CustomOptions'",
+					line: 1,
+					column: 1
+				)
+			],
+			macros: macros,
+			indentationWidth: .spaces(2)
+		)
+	}
 }
 #endif
