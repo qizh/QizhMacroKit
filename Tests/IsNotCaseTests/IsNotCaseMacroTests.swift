@@ -171,5 +171,46 @@ struct IsNotCaseMacroTests {
 			macros: macros
 		)
 	}
+	
+	/// Tests that non-case members are skipped.
+	@Test("Skips non-case members in enum")
+	func skipsNonCaseMembers() {
+		assertMacroExpansion(
+			"""
+			@IsNotCase
+			enum Mixed {
+				case active
+				var description: String { "" }
+				case inactive
+			}
+			""",
+			expandedSource: """
+			enum Mixed {
+				case active
+				var description: String { "" }
+				case inactive
+			
+				var isNotActive: Bool {
+					switch self {
+					case .active:
+						false
+					default:
+						true
+					}
+				}
+			
+				var isNotInactive: Bool {
+					switch self {
+					case .inactive:
+						false
+					default:
+						true
+					}
+				}
+			}
+			""",
+			macros: macros
+		)
+	}
 }
 #endif

@@ -141,6 +141,34 @@ struct CaseValueMacroTests {
 			#expect(p.valuesInt0 == 1)
 			#expect(p.valuesInt1 == 2)
 		}
+		
+		/// Tests parameter name same as case name uses case name only.
+		@Test("Parameter name same as case name")
+		func parameterNameSameAsCaseName() {
+			@CaseValue enum Container { case value(value: Int), empty }
+			let c = Container.value(value: 42)
+			#expect(c.value == 42)
+			#expect(Container.empty.value == nil)
+		}
+		
+		/// Tests property name collision adds type suffix.
+		@Test("Property name collision adds type suffix")
+		func propertyNameCollisionAddsTypeSuffix() {
+			@CaseValue enum Collision { case data(Int, String), none }
+			let c = Collision.data(1, "hello")
+			#expect(c.dataInt == 1)
+			#expect(c.dataString == "hello")
+		}
+		
+		/// Tests property name collision adds number suffix when type suffix also collides.
+		@Test("Property name collision adds number suffix")
+		func propertyNameCollisionAddsNumberSuffix() {
+			@CaseValue enum MultiCollision { case x(Int, Int, Int), none }
+			let m = MultiCollision.x(1, 2, 3)
+			#expect(m.xInt0 == 1)
+			#expect(m.xInt1 == 2)
+			#expect(m.xInt2 == 3)
+		}
 	}
 	
 	// MARK: - Expansion Tests

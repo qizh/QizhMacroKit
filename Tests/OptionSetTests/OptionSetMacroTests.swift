@@ -323,5 +323,54 @@ struct OptionSetMacroTests {
 			indentationWidth: .spaces(2)
 		)
 	}
+	
+	/// Tests that non-case members in Options enum are skipped.
+	@Test("Skips non-case members in Options enum")
+	func testSkipsNonCaseMembersInOptionsEnum() {
+		assertMacroExpansion(
+			"""
+			@OptionSet<UInt8>
+			struct Flags {
+				private enum Options: Int {
+					case enabled
+					var description: String { "" }
+					case disabled
+				}
+			}
+			""",
+			expandedSource: """
+				struct Flags {
+					private enum Options: Int {
+						case enabled
+						var description: String { "" }
+						case disabled
+					}
+
+					typealias RawValue = UInt8
+
+					var rawValue: RawValue
+
+					init() {
+						self.rawValue = 0
+					}
+
+					init(rawValue: RawValue) {
+						self.rawValue = rawValue
+					}
+
+					static let enabled: Self =
+						Self(rawValue: 1 << Options.enabled.rawValue)
+
+					static let disabled: Self =
+						Self(rawValue: 1 << Options.disabled.rawValue)
+				}
+
+				extension Flags: OptionSet {
+				}
+				""",
+			macros: macros,
+			indentationWidth: .spaces(2)
+		)
+	}
 }
 #endif

@@ -174,5 +174,39 @@ struct CaseNameMacroTests {
 			macros: macros
 		)
 	}
+	
+	/// Tests that non-case members are skipped.
+	@Test("Skips non-case members in enum")
+	func skipsNonCaseMembers() {
+		assertMacroExpansion(
+			"""
+			@CaseName
+			enum Mixed {
+				case first
+				var computed: Int { 0 }
+				case second
+				func method() {}
+			}
+			""",
+			expandedSource: """
+			enum Mixed {
+				case first
+				var computed: Int { 0 }
+				case second
+				func method() {}
+			
+				var caseName: String {
+					switch self {
+					case .first:
+						"first"
+					case .second:
+						"second"
+					}
+				}
+			}
+			""",
+			macros: macros
+		)
+	}
 }
 #endif

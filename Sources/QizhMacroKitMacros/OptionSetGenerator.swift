@@ -45,6 +45,8 @@ extension OptionSetMacroDiagnostic: DiagnosticMessage {
 
 	var severity: DiagnosticSeverity { .error }
 
+	/// Required by `DiagnosticMessage` protocol.
+	/// Coverage note: Called indirectly via `diagnose(at:)`, not directly testable.
 	var diagnosticID: MessageID {
 		MessageID(domain: "Swift", id: "OptionSet.\(self)")
 	}
@@ -65,7 +67,7 @@ extension LabeledExprListSyntax {
 			if let label = element.label, label.text == name {
 				return true
 			}
-
+			/// ✨ Line 69: Nice. ✨
 			return false
 		}
 	}
