@@ -160,6 +160,20 @@ For each major repository component:
 - Generate and post a report
 - Update the PR description with the results
 
+### PR Description Updates
+
+When making significant changes to a PR description, preserve the previous content:
+
+```markdown
+<details><summary><h3>Previously in this PR</h3></summary>
+
+<!-- Previous PR description here -->
+
+</details>
+```
+
+Wrapping depth is unlimited — nest as needed for multiple major updates.
+
 ### Auto-Commit Policy
 
 Automatically commit changes (with a generated commit title and description) when **ALL** of the following conditions are met:
