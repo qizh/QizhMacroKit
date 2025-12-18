@@ -315,14 +315,14 @@ struct IsCaseMacroTests {
 				}
 				/// A parameterless representation of `Status` cases.
 				enum Cases: Equatable, CaseIterable {
-			        case on
-			        case off
+					case on
+					case off
 				}
 				/// A parameterless representation of this case.
 				var parametersErasedCase: Cases {
 					switch self {
-			        case .on: .on
-			        case .off: .off
+					case .on: .on
+					case .off: .off
 					}
 				}
 				/// Returns `true` if `self` matches any case in `cases`.
