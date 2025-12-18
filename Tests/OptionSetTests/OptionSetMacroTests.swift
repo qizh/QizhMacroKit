@@ -33,7 +33,7 @@ struct OptionSetMacroTests {
 	func testExpansionOnStructWithNestedEnumAndStatics() {
 		assertMacroExpansion(
 			"""
-			@MyOptionSet<UInt8>
+			@OptionSet<UInt8>
 			struct ShippingOptions {
 				private enum Options: Int {
 					case nextDay
@@ -95,7 +95,7 @@ struct OptionSetMacroTests {
 	func testExpansionOnPublicStructWithExplicitOptionSetConformance() {
 		assertMacroExpansion(
 			"""
-			@MyOptionSet<UInt8>
+			@OptionSet<UInt8>
 			public struct ShippingOptions: OptionSet {
 				private enum Options: Int {
 					case nextDay
@@ -138,7 +138,7 @@ struct OptionSetMacroTests {
 	func testExpansionFailsOnEnumType() {
 		assertMacroExpansion(
 			"""
-			@MyOptionSet<UInt8>
+			@OptionSet<UInt8>
 			enum Animal {
 				case dog
 			}
@@ -164,7 +164,7 @@ struct OptionSetMacroTests {
 	func testExpansionFailsWithoutNestedOptionsEnum() {
 		assertMacroExpansion(
 			"""
-			@MyOptionSet<UInt8>
+			@OptionSet<UInt8>
 			struct ShippingOptions {
 				static let express: ShippingOptions = [.nextDay, .secondDay]
 				static let all: ShippingOptions = [.express, .priority, .standard]
@@ -192,7 +192,7 @@ struct OptionSetMacroTests {
 	func testExpansionFailsWithoutSpecifiedRawType() {
 		assertMacroExpansion(
 			"""
-			@MyOptionSet
+			@OptionSet
 			struct ShippingOptions {
 				private enum Options: Int {
 					case nextDay
@@ -213,6 +213,161 @@ struct OptionSetMacroTests {
 					column: 1
 				)
 			],
+			macros: macros,
+			indentationWidth: .spaces(2)
+		)
+	}
+	
+	@Test("Expansion with custom optionsName argument")
+	func testExpansionWithCustomOptionsName() {
+		assertMacroExpansion(
+			"""
+			@OptionSet<UInt8>(optionsName: "Flags")
+			struct Permissions {
+				private enum Flags: Int {
+					case read
+					case write
+				}
+			}
+			""",
+			expandedSource: """
+				struct Permissions {
+					private enum Flags: Int {
+						case read
+						case write
+					}
+
+					typealias RawValue = UInt8
+
+					var rawValue: RawValue
+
+					init() {
+						self.rawValue = 0
+					}
+
+					init(rawValue: RawValue) {
+						self.rawValue = rawValue
+					}
+
+					static let read: Self =
+						Self(rawValue: 1 << Flags.read.rawValue)
+
+					static let write: Self =
+						Self(rawValue: 1 << Flags.write.rawValue)
+				}
+
+				extension Permissions: OptionSet {
+				}
+				""",
+			macros: macros,
+			indentationWidth: .spaces(2)
+		)
+	}
+	
+	@Test("Expansion fails with non-string literal optionsName")
+	func testExpansionFailsWithNonStringLiteralOptionsName() {
+		assertMacroExpansion(
+			"""
+			@OptionSet<UInt8>(optionsName: someVariable)
+			struct Permissions {
+				private enum Options: Int {
+					case read
+				}
+			}
+			""",
+			expandedSource: """
+				struct Permissions {
+					private enum Options: Int {
+						case read
+					}
+				}
+				""",
+			diagnostics: [
+				DiagnosticSpec(
+					message: "'OptionSet' macro argument optionsName must be a string literal",
+					line: 1,
+					column: 31
+				)
+			],
+			macros: macros,
+			indentationWidth: .spaces(2)
+		)
+	}
+	
+	@Test("Expansion fails when custom optionsName enum is missing")
+	func testExpansionFailsWhenCustomOptionsEnumMissing() {
+		assertMacroExpansion(
+			"""
+			@OptionSet<UInt8>(optionsName: "CustomOptions")
+			struct Permissions {
+				private enum Options: Int {
+					case read
+				}
+			}
+			""",
+			expandedSource: """
+				struct Permissions {
+					private enum Options: Int {
+						case read
+					}
+				}
+				""",
+			diagnostics: [
+				DiagnosticSpec(
+					message: "'OptionSet' macro requires nested options enum 'CustomOptions'",
+					line: 1,
+					column: 1
+				)
+			],
+			macros: macros,
+			indentationWidth: .spaces(2)
+		)
+	}
+	
+	/// Tests that non-case members in Options enum are skipped.
+	@Test("Skips non-case members in Options enum")
+	func testSkipsNonCaseMembersInOptionsEnum() {
+		assertMacroExpansion(
+			"""
+			@OptionSet<UInt8>
+			struct Flags {
+				private enum Options: Int {
+					case enabled
+					var description: String { "" }
+					case disabled
+				}
+			}
+			""",
+			expandedSource: """
+				struct Flags {
+					private enum Options: Int {
+						case enabled
+						var description: String { "" }
+						case disabled
+					}
+
+					typealias RawValue = UInt8
+
+					var rawValue: RawValue
+
+					init() {
+						self.rawValue = 0
+					}
+
+					init(rawValue: RawValue) {
+						self.rawValue = rawValue
+					}
+
+					static let enabled: Self =
+						Self(rawValue: 1 << Options.enabled.rawValue)
+
+					static let disabled: Self =
+						Self(rawValue: 1 << Options.disabled.rawValue)
+				}
+
+				extension Flags: OptionSet {
+				}
+				""",
 			macros: macros,
 			indentationWidth: .spaces(2)
 		)

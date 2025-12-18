@@ -1,12 +1,14 @@
 # CaseValue Macro
 
-> Last Updated: November 25, 2025
+> Last Updated: December 18, 2025
 
 An attached member macro that generates computed properties to extract associated values from enum cases.
 
 ## Overview
 
-The `@CaseValue` macro automatically generates optional computed properties for each associated value in your enum cases. This eliminates boilerplate code when you need to access specific values from enum cases.
+The `@CaseValue` macro automatically generates computed properties for each associated value in your enum cases. This eliminates boilerplate code when you need to access specific values from enum cases.
+
+**For single-case enums**, the generated properties are **non-optional** since there's only one possible case. **For multi-case enums**, the properties are optional and return `nil` when the current case doesn't match.
 
 ## Declaration
 
@@ -112,6 +114,34 @@ enum Callback {
 // Generated: onSelectCallback: (() -> Void)?
 ```
 
+### Single-Case Enums
+
+When an enum has only one case with associated values, the generated properties are **non-optional**. This avoids the "Default will never be executed" compiler warning:
+
+```swift
+@CaseValue
+enum Handler {
+    case action(handler: () -> Void)
+}
+
+// Generated: actionHandler: (() -> Void)  // Non-optional!
+
+let h = Handler.action { print("Hello") }
+h.actionHandler()  // Direct call, no unwrapping needed
+```
+
+Compare with a multi-case enum:
+
+```swift
+@CaseValue
+enum Event {
+    case tap(at: CGPoint)
+    case swipe(direction: String)
+}
+
+// Generated: tapAt: CGPoint?, swipeDirection: String?  // Optional
+```
+
 ## Access Modifiers
 
 The generated properties inherit the access level of the enum:
@@ -164,6 +194,11 @@ if let progress = result.loadingProgress {
 - Only works with enums (applying to other types produces a compile-time error)
 - Cases without associated values are skipped (no property generated)
 - Reserved Swift keywords as case names must be escaped with backticks
+
+## Notes
+
+- Single-case enums generate non-optional properties (no `default: nil` branch)
+- Multi-case enums generate optional properties with a `default: nil` fallback
 
 ## See Also
 

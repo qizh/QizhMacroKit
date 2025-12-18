@@ -1,11 +1,19 @@
 #if os(macOS)
 import Testing
+import SwiftSyntaxMacros
+import SwiftSyntaxMacrosTestSupport
 @testable import QizhMacroKit
 @testable import QizhMacroKitMacros
 
 /// Tests for the `CaseValue` macro.
 @Suite("CaseValue macro")
 struct CaseValueMacroTests {
+	private let macros: [String: any Macro.Type] = [
+		"CaseValue": CaseValueGenerator.self
+	]
+	
+	// MARK: - Runtime Tests
+	
 	/// Ensures associated values are exposed via generated properties.
 	@Test("Extracts associated values")
 	func extractsAssociatedValues() {
@@ -16,6 +24,47 @@ struct CaseValueMacroTests {
 		let word = Token.text("hi")
 		#expect(word.int == nil)
 		#expect(word.textString == "hi")
+	}
+	
+	/// Tests multiple parameters in a single case.
+	@Test("Extracts multiple parameters")
+	func extractsMultipleParameters() {
+		@CaseValue enum Point { case xy(x: Int, y: Int) }
+		let p = Point.xy(x: 10, y: 20)
+		/// Single-case enum: properties are non-optional
+		#expect(p.xyX == 10)
+		#expect(p.xyY == 20)
+	}
+	
+	/// Tests optional associated values.
+	@Test("Handles optional associated values")
+	func handlesOptionalValues() {
+		@CaseValue enum Container { case value(Int?), empty }
+		let withValue = Container.value(42)
+		let withNil = Container.value(nil)
+		let empty = Container.empty
+		#expect(withValue.valueInt == 42)
+		#expect(withNil.valueInt == nil)
+		#expect(empty.valueInt == nil)
+	}
+	
+	/// Tests function type parameters.
+	@Test("Handles function type parameters")
+	func handlesFunctionTypes() {
+		@CaseValue enum Handler { case action(handler: () -> Void) }
+		var called = false
+		let h = Handler.action { called = true }
+		/// Single-case enum: property is non-optional
+		h.actionHandler()
+		#expect(called)
+	}
+	
+	/// Tests cases without associated values are skipped.
+	@Test("Skips cases without associated values")
+	func skipsCasesWithoutValues() {
+		@CaseValue enum Mixed { case withValue(value: Int), withoutValue }
+		let v = Mixed.withValue(value: 5)
+		#expect(v.withValueValue == 5)
 	}
 	
 	// MARK: Edge Cases
@@ -81,6 +130,119 @@ struct CaseValueMacroTests {
 			#expect(v4.fooBar == nil)
 			#expect(v4.fooBarString == nil)
 			#expect(v4.fooBarString1 == nil)
+		}
+		
+		/// Tests parameters with same type get indexed suffixes.
+		@Test("Multiple same-type unnamed parameters get indexed")
+		func multipleSameTypeUnnamedParameters() {
+			@CaseValue enum Pair { case values(Int, Int) }
+			let p = Pair.values(1, 2)
+			/// Single-case enum: properties are non-optional
+			#expect(p.valuesInt0 == 1)
+			#expect(p.valuesInt1 == 2)
+		}
+		
+		/// Tests parameter name same as case name uses case name only.
+		@Test("Parameter name same as case name")
+		func parameterNameSameAsCaseName() {
+			@CaseValue enum Container { case value(value: Int), empty }
+			let c = Container.value(value: 42)
+			#expect(c.value == 42)
+			#expect(Container.empty.value == nil)
+		}
+		
+		/// Tests property name collision adds type suffix.
+		@Test("Property name collision adds type suffix")
+		func propertyNameCollisionAddsTypeSuffix() {
+			@CaseValue enum Collision { case data(Int, String), none }
+			let c = Collision.data(1, "hello")
+			#expect(c.dataInt == 1)
+			#expect(c.dataString == "hello")
+		}
+		
+		/// Tests property name collision adds number suffix when type suffix also collides.
+		@Test("Property name collision adds number suffix")
+		func propertyNameCollisionAddsNumberSuffix() {
+			@CaseValue enum MultiCollision { case x(Int, Int, Int), none }
+			let m = MultiCollision.x(1, 2, 3)
+			#expect(m.xInt0 == 1)
+			#expect(m.xInt1 == 2)
+			#expect(m.xInt2 == 3)
+		}
+	}
+	
+	// MARK: - Expansion Tests
+	
+	@Suite("Expansion tests")
+	struct ExpansionTests {
+		private let macros: [String: any Macro.Type] = [
+			"CaseValue": CaseValueGenerator.self
+		]
+		
+		/// Tests that applying to a struct produces an error.
+		@Test("Fails when applied to struct")
+		func failsOnStruct() {
+			assertMacroExpansion(
+				"""
+				@CaseValue
+				struct NotAnEnum { var x: Int }
+				""",
+				expandedSource: """
+				struct NotAnEnum { var x: Int }
+				""",
+				diagnostics: [
+					DiagnosticSpec(
+						message: "@CaseValue can only be applied to enums",
+						line: 1,
+						column: 1,
+						severity: .error
+					)
+				],
+				macros: macros
+			)
+		}
+		
+		/// Tests expansion respects access modifiers for single-case enum.
+		@Test("Expansion respects public access modifier (single-case)")
+		func expansionRespectsPublicAccessSingleCase() {
+			assertMacroExpansion(
+				"""
+				@CaseValue
+				public enum Token { case value(Int) }
+				""",
+				expandedSource: """
+				public enum Token { case value(Int)
+					/// `Int` value of `Int` parameter in `.value` case.
+					public var value: Int {
+						switch self {
+						case .value(let value): value
+						}
+					}}
+				""",
+				macros: macros
+			)
+		}
+		
+		/// Tests expansion for multi-case enum produces optional types.
+		@Test("Expansion produces optional types for multi-case enum")
+		func expansionProducesOptionalForMultiCase() {
+			assertMacroExpansion(
+				"""
+				@CaseValue
+				enum Result { case success(Int), failure }
+				""",
+				expandedSource: """
+				enum Result { case success(Int), failure
+					/// `Int?` value of `Int` parameter in `.success` case.
+					var success: Int? {
+						switch self {
+						case .success(let value): value
+						default: nil
+						}
+					}}
+				""",
+				macros: macros
+			)
 		}
 	}
 }

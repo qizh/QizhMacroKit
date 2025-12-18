@@ -33,7 +33,7 @@ public struct IsCasesGenerator: MemberMacro {
 		}
 		
 		let members = enumDecl.memberBlock.members
-        // Collect all enum case elements across all case declarations
+        /// Collect all enum case elements across all case declarations
         let caseDecls = members.compactMap { $0.decl.as(EnumCaseDeclSyntax.self) }
         let allCaseElements: [EnumCaseElementSyntax] = caseDecls.flatMap { Array($0.elements) }
 		var additions: [DeclSyntax] = []
@@ -56,7 +56,7 @@ public struct IsCasesGenerator: MemberMacro {
 			)
 			return []
 		} else if allCaseElements.count == 1 {
-			// Exactly one case element across the entire enum
+			/// Exactly one case element across the entire enum
 			let element = allCaseElements[0]
 			let caseName = element.name.text.withBackticksTrimmed
 			caseNames.append(caseName)
@@ -71,7 +71,7 @@ public struct IsCasesGenerator: MemberMacro {
 				"""
 			additions.append(property)
 		} else {
-			// Iterate over each collected case element
+			/// Iterate over each collected case element
 			for element in allCaseElements {
 				let caseName = element.name.text.withBackticksTrimmed
 				caseNames.append(caseName)
@@ -91,9 +91,9 @@ public struct IsCasesGenerator: MemberMacro {
 			}
 		}
 		
-		// Generate Cases enum
+		/// Generate Cases enum
 		let casesLines = caseNames
-			.map { "        case \($0.escapedSwiftIdentifier)" }
+			.map { "\t\tcase \($0.escapedSwiftIdentifier)" }
 			.joined(separator: "\n")
 		let casesDecl: DeclSyntax = """
 			/// A parameterless representation of `\(raw: enumDecl.name.text)` cases.
@@ -102,11 +102,11 @@ public struct IsCasesGenerator: MemberMacro {
 			}
 			"""
 		
-		// Property converting self to Cases
+		/// Property converting self to Cases
 		let mappingLines = caseNames
 			.map { name in
 				let escaped = name.escapedSwiftIdentifier
-				return "        case .\(escaped): .\(escaped)"
+				return "\t\tcase .\(escaped): .\(escaped)"
 			}
 			.joined(separator: "\n")
 		let caseValueProperty: DeclSyntax = """
@@ -118,7 +118,7 @@ public struct IsCasesGenerator: MemberMacro {
 			}
 			"""
 		
-		// Methods for checking membership
+		/// Methods for checking membership
 		let arrayMethod: DeclSyntax = """
 			/// Returns `true` if `self` matches any case in `cases`.
 			/// - Parameter cases: An array of cases to match against.

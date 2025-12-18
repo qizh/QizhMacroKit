@@ -236,5 +236,109 @@ struct IsCaseMacroTests {
 			macros: ["IsCase": QizhMacroKitMacros.IsCasesGenerator.self]
 		)
 	}
+	
+	// MARK: - Error Cases
+	
+	/// Tests that applying to a struct produces an error.
+	@Test("Fails when applied to struct")
+	func failsOnStruct() {
+		assertMacroExpansion(
+			#"""
+			@IsCase
+			struct NotAnEnum { var x: Int }
+			"""#,
+			expandedSource:
+			#"""
+			struct NotAnEnum { var x: Int }
+			"""#,
+			diagnostics: [
+				DiagnosticSpec(
+					message: "@IsCase can only be applied to enums",
+					line: 1,
+					column: 1,
+					severity: .error
+				)
+			],
+			macros: ["IsCase": QizhMacroKitMacros.IsCasesGenerator.self]
+		)
+	}
+	
+	/// Tests that applying to an empty enum produces a warning.
+	@Test("Warns when applied to empty enum")
+	func warnsOnEmptyEnum() {
+		assertMacroExpansion(
+			#"""
+			@IsCase
+			enum Empty {}
+			"""#,
+			expandedSource:
+			#"""
+			enum Empty {}
+			"""#,
+			diagnostics: [
+				DiagnosticSpec(
+					message: "There are no cases in the enum, so `@IsCase` can NOT be applied. You may want to add a case.",
+					line: 1,
+					column: 1,
+					severity: .warning
+				)
+			],
+			macros: ["IsCase": QizhMacroKitMacros.IsCasesGenerator.self]
+		)
+	}
+	
+	/// Tests multiple cases generate switch-based properties.
+	@Test("Multiple cases generate switch-based properties")
+	func multipleCasesGenerateSwitchProperties() {
+		assertMacroExpansion(
+			#"""
+			@IsCase
+			enum Status { case on, off }
+			"""#,
+			expandedSource:
+			#"""
+			enum Status {
+				case on, off
+				/// Returns `true` if `self` is `.on`.
+				var isOn: Bool {
+					switch self {
+					case .on: true
+					default: false
+					}
+				}
+				/// Returns `true` if `self` is `.off`.
+				var isOff: Bool {
+					switch self {
+					case .off: true
+					default: false
+					}
+				}
+				/// A parameterless representation of `Status` cases.
+				enum Cases: Equatable, CaseIterable {
+					case on
+					case off
+				}
+				/// A parameterless representation of this case.
+				var parametersErasedCase: Cases {
+					switch self {
+					case .on: .on
+					case .off: .off
+					}
+				}
+				/// Returns `true` if `self` matches any case in `cases`.
+				/// - Parameter cases: An array of cases to match against.
+				func isAmong(_ cases: [Cases]) -> Bool {
+					cases.contains(self.parametersErasedCase)
+				}
+				/// Returns `true` if `self` matches any of the provided cases.
+				/// - Parameter cases: The cases to match against.
+				func isAmong(_ cases: Cases...) -> Bool {
+					isAmong(cases)
+				}
+			}
+			"""#,
+			macros: ["IsCase": QizhMacroKitMacros.IsCasesGenerator.self]
+		)
+	}
 }
 #endif

@@ -7,7 +7,6 @@
 
 import SwiftSyntax
 import SwiftSyntaxBuilder
-import SwiftCompilerPlugin
 import SwiftDiagnostics
 
 // MARK: Stringify
