@@ -82,12 +82,12 @@ public struct OptionSetGenerator {
 		in context: some MacroExpansionContext,
 		emitDiagnostics: Bool
 	) -> (StructDeclSyntax, EnumDeclSyntax, GenericArgumentSyntax.Argument)? {
-		// Determine the name of the options enum.
+		/// Determine the name of the options enum.
 		let optionsEnumName: String
 		if case let .argumentList(arguments) = attribute.arguments,
 			let optionEnumNameArg = arguments.first(labeled: optionsEnumNameArgumentLabel)
 		{
-			// We have a options name; make sure it is a string literal.
+			/// We have a options name; make sure it is a string literal.
 			guard let stringLiteral = optionEnumNameArg.expression.as(StringLiteralExprSyntax.self),
 				stringLiteral.segments.count == 1,
 				case let .stringSegment(optionsEnumNameString)? = stringLiteral.segments.first
@@ -107,7 +107,7 @@ public struct OptionSetGenerator {
 			optionsEnumName = defaultOptionsEnumName
 		}
 
-		// Only apply to structs.
+		/// Only apply to structs.
 		guard let structDecl = decl.as(StructDeclSyntax.self) else {
 			if emitDiagnostics {
 				context.diagnose(OptionSetMacroDiagnostic.requiresStruct.diagnose(at: decl))
@@ -115,7 +115,7 @@ public struct OptionSetGenerator {
 			return nil
 		}
 
-		// Find the option enum within the struct.
+		/// Find the option enum within the struct.
 		guard
 			let optionsEnum = decl.memberBlock.members.compactMap({ member in
 				if let enumDecl = member.decl.as(EnumDeclSyntax.self),
@@ -133,7 +133,7 @@ public struct OptionSetGenerator {
 			return nil
 		}
 
-		// Retrieve the raw type from the attribute.
+		/// Retrieve the raw type from the attribute.
 		guard let genericArgs = attribute.attributeName.as(IdentifierTypeSyntax.self)?.genericArgumentClause,
 			let rawType = genericArgs.arguments.first?.argument
 		else {
@@ -155,14 +155,14 @@ extension OptionSetGenerator: ExtensionMacro {
 		conformingTo protocols: [TypeSyntax],
 		in context: some MacroExpansionContext
 	) throws -> [ExtensionDeclSyntax] {
-		// Decode the expansion arguments.
+		/// Decode the expansion arguments.
 		guard
 			let (structDecl, _, _) = decodeExpansion(of: node, attachedTo: declaration, in: context, emitDiagnostics: false)
 		else {
 			return []
 		}
 
-		// If there is an explicit conformance to OptionSet already, don't add one.
+		/// If there is an explicit conformance to OptionSet already, don't add one.
 		if let inheritedTypes = structDecl.inheritanceClause?.inheritedTypes,
 			inheritedTypes.contains(where: { inherited in inherited.type.trimmedDescription == "OptionSet" })
 		{
@@ -180,7 +180,7 @@ extension OptionSetGenerator: MemberMacro {
 		conformingTo: [TypeSyntax],
 		in context: some MacroExpansionContext
 	) throws -> [DeclSyntax] {
-		// Decode the expansion arguments.
+		/// Decode the expansion arguments.
 		guard
 			let (_, optionsEnum, rawType) = decodeExpansion(
 				of: attribute,
@@ -192,7 +192,7 @@ extension OptionSetGenerator: MemberMacro {
 			return []
 		}
 
-		// Find all of the case elements.
+		/// Find all of the case elements.
 		let caseElements: [EnumCaseElementSyntax] = optionsEnum.memberBlock.members.flatMap { member in
 			guard let caseDecl = member.decl.as(EnumCaseDeclSyntax.self) else {
 				return [EnumCaseElementSyntax]()
@@ -201,7 +201,7 @@ extension OptionSetGenerator: MemberMacro {
 			return Array(caseDecl.elements)
 		}
 
-		// Dig out the access control keyword we need.
+		/// Dig out the access control keyword we need.
 		let access = decl.modifiers.first(where: \.isNeededAccessLevelModifier)
 
 		let staticVars = caseElements.map { (element) -> DeclSyntax in

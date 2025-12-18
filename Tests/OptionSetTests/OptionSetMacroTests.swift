@@ -33,7 +33,7 @@ struct OptionSetMacroTests {
 	func testExpansionOnStructWithNestedEnumAndStatics() {
 		assertMacroExpansion(
 			"""
-			@MyOptionSet<UInt8>
+			@OptionSet<UInt8>
 			struct ShippingOptions {
 				private enum Options: Int {
 					case nextDay
@@ -95,7 +95,7 @@ struct OptionSetMacroTests {
 	func testExpansionOnPublicStructWithExplicitOptionSetConformance() {
 		assertMacroExpansion(
 			"""
-			@MyOptionSet<UInt8>
+			@OptionSet<UInt8>
 			public struct ShippingOptions: OptionSet {
 				private enum Options: Int {
 					case nextDay
@@ -138,7 +138,7 @@ struct OptionSetMacroTests {
 	func testExpansionFailsOnEnumType() {
 		assertMacroExpansion(
 			"""
-			@MyOptionSet<UInt8>
+			@OptionSet<UInt8>
 			enum Animal {
 				case dog
 			}
@@ -164,7 +164,7 @@ struct OptionSetMacroTests {
 	func testExpansionFailsWithoutNestedOptionsEnum() {
 		assertMacroExpansion(
 			"""
-			@MyOptionSet<UInt8>
+			@OptionSet<UInt8>
 			struct ShippingOptions {
 				static let express: ShippingOptions = [.nextDay, .secondDay]
 				static let all: ShippingOptions = [.express, .priority, .standard]
@@ -192,7 +192,7 @@ struct OptionSetMacroTests {
 	func testExpansionFailsWithoutSpecifiedRawType() {
 		assertMacroExpansion(
 			"""
-			@MyOptionSet
+			@OptionSet
 			struct ShippingOptions {
 				private enum Options: Int {
 					case nextDay
