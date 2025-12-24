@@ -1,6 +1,6 @@
 # TODO — Roadmap & Planned Improvements
 
-> Last Updated: November 27, 2025
+> Last Updated: December 25, 2025
 
 This document outlines features, improvements, and tasks for `QizhMacroKit`, **planned by AI**.
 
@@ -117,6 +117,7 @@ This document outlines features, improvements, and tasks for `QizhMacroKit`, **p
 - [x] Implement `@IsCase` macro with membership checking
 - [x] Implement `@IsNotCase` macro
 - [x] Implement `@CaseValue` macro
+- [x] Implement `@OptionSet` macro
 - [x] Implement `#stringify` macro
 - [x] Implement `#dictionarify` macro
 - [x] Add Swift keyword escaping support

@@ -18,6 +18,7 @@ QizhMacroKit uses Swift Macros (introduced in Swift 5.9) and requires Swift 6.2+
 | [`@CaseValue`](Docs/CaseValue.md) | Attached | Generates properties to extract associated values from cases |
 | [`@IsCase`](Docs/IsCase.md) | Attached | Generates `is<CaseName>` boolean properties and membership checking |
 | [`@IsNotCase`](Docs/IsNotCase.md) | Attached | Generates `isNot<CaseName>` boolean properties |
+| `@OptionSet<RawType>` | Attached | Creates an `OptionSet` from a struct with nested `Options` enum |
 | [`#stringify`](Docs/Stringify.md) | Freestanding | Converts an expression to its source text |
 | [`#dictionarify`](Docs/Stringify.md) | Freestanding | Returns a key-value pair with source text and evaluated value |
 
