@@ -117,4 +117,16 @@ extension String {
 	internal var toDotCase: String {
 		self.toLocalizedLowercasedWords(joinedBy: ".")
 	}
+	
+	/// Returns a copy of this string with its first character uppercased.
+	///
+	/// Useful for combining identifiers in camelCase style.
+	/// - Example: `"high".capitalizingFirstLetter()` returns `"High"`
+	///
+	/// - Returns: The string with the first character capitalized,
+	///   or the original string if empty.
+	internal func capitalizingFirstLetter() -> String {
+		guard let first = self.first else { return self }
+		return first.uppercased() + self.dropFirst()
+	}
 }

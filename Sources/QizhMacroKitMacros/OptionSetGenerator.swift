@@ -20,6 +20,8 @@ enum OptionSetMacroDiagnostic {
 	case requiresStringLiteral(_ name: String)
 	case requiresOptionsEnum(_ name: String)
 	case requiresOptionsEnumRawType
+	case associatedEnumNotFound(_ typeName: String, caseName: String)
+	case associatedEnumMissingCases(_ typeName: String)
 }
 
 extension OptionSetMacroDiagnostic: DiagnosticMessage {
@@ -29,10 +31,18 @@ extension OptionSetMacroDiagnostic: DiagnosticMessage {
 
 	var message: String {
 		switch self {
-		case .requiresStruct: 					"'OptionSet' macro can only be applied to a struct"
-		case .requiresStringLiteral(let name): 	"'OptionSet' macro argument '\(name)' must be a string literal"
-		case .requiresOptionsEnum(let name): 	"'OptionSet' macro requires nested options enum '\(name)'"
-		case .requiresOptionsEnumRawType: 		"'OptionSet' macro requires a raw type"
+		case .requiresStruct:
+			"'OptionSet' macro can only be applied to a struct"
+		case .requiresStringLiteral(let name):
+			"'OptionSet' macro argument '\(name)' must be a string literal"
+		case .requiresOptionsEnum(let name):
+			"'OptionSet' macro requires nested options enum '\(name)'"
+		case .requiresOptionsEnumRawType:
+			"'OptionSet' macro requires a raw type"
+		case .associatedEnumNotFound(let typeName, let caseName):
+			"Associated type '\(typeName)' for case '\(caseName)' must be a nested enum with cases"
+		case .associatedEnumMissingCases(let typeName):
+			"Associated enum '\(typeName)' has no cases to generate options from"
 		}
 	}
 
@@ -182,7 +192,7 @@ extension OptionSetGenerator: MemberMacro {
 		in context: some MacroExpansionContext
 	) throws -> [DeclSyntax] {
 		/// Decode the expansion arguments.
-		guard let (_, optionsEnum, rawType) = decodeExpansion(
+		guard let (structDecl, optionsEnum, rawType) = decodeExpansion(
 			of: attribute,
 			attachedTo: decl,
 			in: context,
@@ -203,12 +213,24 @@ extension OptionSetGenerator: MemberMacro {
 
 		/// Dig out the access control keyword we need.
 		let access = decl.modifiers.first(where: \.isNeededAccessLevelModifier)
+		
+		/// Collect all nested enums in the struct for associated value resolution.
+		let nestedEnums = collectNestedEnums(from: structDecl)
 
-		let staticVars = caseElements.map { (element) -> DeclSyntax in
-			"""
-			\(access) static let \(element.name): Self =
-				Self(rawValue: 1 << \(optionsEnum.name).\(element.name).rawValue)
-			"""
+		/// Generate static properties for each case element.
+		var staticVars: [DeclSyntax] = []
+		var bitIndex = 0
+		
+		for element in caseElements {
+			let generatedProperties = generateStaticProperties(
+				for: element,
+				in: optionsEnum,
+				nestedEnums: nestedEnums,
+				access: access,
+				bitIndex: &bitIndex,
+				context: context
+			)
+			staticVars.append(contentsOf: generatedProperties)
 		}
 
 		return [
@@ -217,6 +239,109 @@ extension OptionSetGenerator: MemberMacro {
 			"\(access)init() { self.rawValue = 0 }",
 			"\(access)init(rawValue: RawValue) { self.rawValue = rawValue }",
 		] + staticVars
+	}
+	
+	// MARK: - Associated Enum Value Support
+	
+	/// Collects all nested enum declarations from a struct.
+	///
+	/// Used to resolve associated value types that reference nested enums.
+	/// Only enums with case declarations are included.
+	///
+	/// - Parameter structDecl: The struct declaration to search.
+	/// - Returns: Dictionary mapping enum names to their case elements.
+	private static func collectNestedEnums(
+		from structDecl: StructDeclSyntax
+	) -> [String: [EnumCaseElementSyntax]] {
+		var result: [String: [EnumCaseElementSyntax]] = [:]
+		
+		for member in structDecl.memberBlock.members {
+			guard let enumDecl = member.decl.as(EnumDeclSyntax.self) else {
+				continue
+			}
+			
+			let cases = enumDecl.memberBlock.members.flatMap { member in
+				guard let caseDecl = member.decl.as(EnumCaseDeclSyntax.self) else {
+					return [EnumCaseElementSyntax]()
+				}
+				return Array(caseDecl.elements)
+			}
+			
+			if !cases.isEmpty {
+				result[enumDecl.name.text] = cases
+			}
+		}
+		
+		return result
+	}
+	
+	/// Generates static properties for an Options enum case element.
+	///
+	/// For simple cases (no associated values), generates a single static property.
+	/// For cases with associated enum values, generates a static property for each
+	/// case of the associated enum type.
+	///
+	/// - Parameters:
+	///   - element: The enum case element to process.
+	///   - optionsEnum: The Options enum declaration.
+	///   - nestedEnums: Dictionary of nested enums and their cases.
+	///   - access: The access modifier to apply.
+	///   - bitIndex: Current bit index, incremented for each generated property.
+	///   - context: Macro expansion context for diagnostics.
+	/// - Returns: Array of generated static property declarations.
+	private static func generateStaticProperties(
+		for element: EnumCaseElementSyntax,
+		in optionsEnum: EnumDeclSyntax,
+		nestedEnums: [String: [EnumCaseElementSyntax]],
+		access: DeclModifierSyntax?,
+		bitIndex: inout Int,
+		context: some MacroExpansionContext
+	) -> [DeclSyntax] {
+		/// Check if this case has associated values.
+		guard let parameterClause = element.parameterClause,
+			  let firstParam = parameterClause.parameters.first else {
+			/// Simple case without associated values - use original behavior.
+			let decl: DeclSyntax = """
+				\(access) static let \(element.name): Self =
+					Self(rawValue: 1 << \(optionsEnum.name).\(element.name).rawValue)
+				"""
+			bitIndex += 1
+			return [decl]
+		}
+		
+		/// Extract the type name from the parameter.
+		let typeName = firstParam.type.trimmedDescription
+		
+		/// Look up the type in nested enums.
+		guard let enumCases = nestedEnums[typeName] else {
+			/// Not a nested enum - fall back to simple case generation.
+			/// This handles external types or non-enum associated values.
+			let decl: DeclSyntax = """
+				\(access) static let \(element.name): Self =
+					Self(rawValue: 1 << \(raw: bitIndex))
+				"""
+			bitIndex += 1
+			return [decl]
+		}
+		
+		/// Generate a static property for each case of the associated enum.
+		var properties: [DeclSyntax] = []
+		let baseName = element.name.text
+		
+		for enumCase in enumCases {
+			let caseName = enumCase.name.text
+			/// Combine names: "level" + "High" -> "levelHigh"
+			let combinedName = baseName + caseName.capitalizingFirstLetter()
+			
+			let decl: DeclSyntax = """
+				\(access) static let \(raw: combinedName): Self =
+					Self(rawValue: 1 << \(raw: bitIndex))
+				"""
+			properties.append(decl)
+			bitIndex += 1
+		}
+		
+		return properties
 	}
 }
 

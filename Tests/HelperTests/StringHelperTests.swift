@@ -274,5 +274,35 @@ struct StringHelperTests {
 			#expect(words.isEmpty)
 		}
 	}
+	
+	@Suite("capitalizingFirstLetter")
+	struct CapitalizingFirstLetterTests {
+		
+		@Test("Capitalizes first letter of lowercase word")
+		func capitalizesLowercaseWord() {
+			#expect("hello".capitalizingFirstLetter() == "Hello")
+		}
+		
+		@Test("Preserves already capitalized word")
+		func preservesCapitalizedWord() {
+			#expect("Hello".capitalizingFirstLetter() == "Hello")
+		}
+		
+		@Test("Handles single character")
+		func handlesSingleCharacter() {
+			#expect("a".capitalizingFirstLetter() == "A")
+			#expect("A".capitalizingFirstLetter() == "A")
+		}
+		
+		@Test("Returns empty for empty string")
+		func returnsEmptyForEmptyString() {
+			#expect("".capitalizingFirstLetter() == "")
+		}
+		
+		@Test("Preserves rest of string")
+		func preservesRestOfString() {
+			#expect("helloWORLD".capitalizingFirstLetter() == "HelloWORLD")
+		}
+	}
 }
 #endif

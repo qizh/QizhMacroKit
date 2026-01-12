@@ -372,5 +372,367 @@ struct OptionSetMacroTests {
 			indentationWidth: .spaces(2)
 		)
 	}
+	
+	// MARK: - Associated Enum Value Tests
+	
+	/// Tests that cases with associated nested enum values generate combined properties.
+	@Test("Generates properties for associated nested enum values")
+	func testAssociatedNestedEnumValues() {
+		assertMacroExpansion(
+			"""
+			@OptionSet<UInt8>
+			struct Configuration {
+				private enum Options {
+					case level(Priority)
+				}
+				
+				enum Priority {
+					case low
+					case medium
+					case high
+				}
+			}
+			""",
+			expandedSource: """
+				struct Configuration {
+					private enum Options {
+						case level(Priority)
+					}
+					
+					enum Priority {
+						case low
+						case medium
+						case high
+					}
+
+					typealias RawValue = UInt8
+
+					var rawValue: RawValue
+
+					init() {
+						self.rawValue = 0
+					}
+
+					init(rawValue: RawValue) {
+						self.rawValue = rawValue
+					}
+
+					static let levelLow: Self =
+						Self(rawValue: 1 << 0)
+
+					static let levelMedium: Self =
+						Self(rawValue: 1 << 1)
+
+					static let levelHigh: Self =
+						Self(rawValue: 1 << 2)
+				}
+
+				extension Configuration: OptionSet {
+				}
+				""",
+			macros: macros,
+			indentationWidth: .spaces(2)
+		)
+	}
+	
+	/// Tests mixing simple cases with associated enum value cases.
+	@Test("Mixes simple cases with associated enum values")
+	func testMixedSimpleAndAssociatedCases() {
+		assertMacroExpansion(
+			"""
+			@OptionSet<UInt8>
+			struct Settings {
+				private enum Options: Int {
+					case enabled
+					case theme(Theme)
+					case debug
+				}
+				
+				enum Theme {
+					case light
+					case dark
+				}
+			}
+			""",
+			expandedSource: """
+				struct Settings {
+					private enum Options: Int {
+						case enabled
+						case theme(Theme)
+						case debug
+					}
+					
+					enum Theme {
+						case light
+						case dark
+					}
+
+					typealias RawValue = UInt8
+
+					var rawValue: RawValue
+
+					init() {
+						self.rawValue = 0
+					}
+
+					init(rawValue: RawValue) {
+						self.rawValue = rawValue
+					}
+
+					static let enabled: Self =
+						Self(rawValue: 1 << Options.enabled.rawValue)
+
+					static let themeLight: Self =
+						Self(rawValue: 1 << 1)
+
+					static let themeDark: Self =
+						Self(rawValue: 1 << 2)
+
+					static let debug: Self =
+						Self(rawValue: 1 << Options.debug.rawValue)
+				}
+
+				extension Settings: OptionSet {
+				}
+				""",
+			macros: macros,
+			indentationWidth: .spaces(2)
+		)
+	}
+	
+	/// Tests that multiple associated enum value cases work correctly.
+	@Test("Multiple associated enum value cases")
+	func testMultipleAssociatedEnumCases() {
+		assertMacroExpansion(
+			"""
+			@OptionSet<UInt16>
+			struct DisplayOptions {
+				private enum Options {
+					case size(Size)
+					case color(Color)
+				}
+				
+				enum Size {
+					case small
+					case large
+				}
+				
+				enum Color {
+					case red
+					case blue
+					case green
+				}
+			}
+			""",
+			expandedSource: """
+				struct DisplayOptions {
+					private enum Options {
+						case size(Size)
+						case color(Color)
+					}
+					
+					enum Size {
+						case small
+						case large
+					}
+					
+					enum Color {
+						case red
+						case blue
+						case green
+					}
+
+					typealias RawValue = UInt16
+
+					var rawValue: RawValue
+
+					init() {
+						self.rawValue = 0
+					}
+
+					init(rawValue: RawValue) {
+						self.rawValue = rawValue
+					}
+
+					static let sizeSmall: Self =
+						Self(rawValue: 1 << 0)
+
+					static let sizeLarge: Self =
+						Self(rawValue: 1 << 1)
+
+					static let colorRed: Self =
+						Self(rawValue: 1 << 2)
+
+					static let colorBlue: Self =
+						Self(rawValue: 1 << 3)
+
+					static let colorGreen: Self =
+						Self(rawValue: 1 << 4)
+				}
+
+				extension DisplayOptions: OptionSet {
+				}
+				""",
+			macros: macros,
+			indentationWidth: .spaces(2)
+		)
+	}
+	
+	/// Tests that unknown associated value types fall back to simple generation.
+	@Test("Falls back to simple generation for unknown associated types")
+	func testUnknownAssociatedTypeFallback() {
+		assertMacroExpansion(
+			"""
+			@OptionSet<UInt8>
+			struct Config {
+				private enum Options {
+					case value(ExternalType)
+					case flag
+				}
+			}
+			""",
+			expandedSource: """
+				struct Config {
+					private enum Options {
+						case value(ExternalType)
+						case flag
+					}
+
+					typealias RawValue = UInt8
+
+					var rawValue: RawValue
+
+					init() {
+						self.rawValue = 0
+					}
+
+					init(rawValue: RawValue) {
+						self.rawValue = rawValue
+					}
+
+					static let value: Self =
+						Self(rawValue: 1 << 0)
+
+					static let flag: Self =
+						Self(rawValue: 1 << 1)
+				}
+
+				extension Config: OptionSet {
+				}
+				""",
+			macros: macros,
+			indentationWidth: .spaces(2)
+		)
+	}
+	
+	/// Tests associated enum values with public access modifier.
+	@Test("Associated enum values with public access modifier")
+	func testAssociatedEnumWithPublicAccess() {
+		assertMacroExpansion(
+			"""
+			@OptionSet<UInt8>
+			public struct PublicConfig {
+				private enum Options {
+					case mode(Mode)
+				}
+				
+				enum Mode {
+					case auto
+					case manual
+				}
+			}
+			""",
+			expandedSource: """
+				public struct PublicConfig {
+					private enum Options {
+						case mode(Mode)
+					}
+					
+					enum Mode {
+						case auto
+						case manual
+					}
+
+					public typealias RawValue = UInt8
+
+					public var rawValue: RawValue
+
+					public init() {
+						self.rawValue = 0
+					}
+
+					public init(rawValue: RawValue) {
+						self.rawValue = rawValue
+					}
+
+					public  static let modeAuto: Self =
+						Self(rawValue: 1 << 0)
+
+					public  static let modeManual: Self =
+						Self(rawValue: 1 << 1)
+				}
+
+				extension PublicConfig: OptionSet {
+				}
+				""",
+			macros: macros,
+			indentationWidth: .spaces(2)
+		)
+	}
+	
+	/// Tests associated enum with labeled parameter.
+	@Test("Associated enum with labeled parameter")
+	func testAssociatedEnumWithLabeledParameter() {
+		assertMacroExpansion(
+			"""
+			@OptionSet<UInt8>
+			struct Labeled {
+				private enum Options {
+					case priority(_ value: Level)
+				}
+				
+				enum Level {
+					case low
+					case high
+				}
+			}
+			""",
+			expandedSource: """
+				struct Labeled {
+					private enum Options {
+						case priority(_ value: Level)
+					}
+					
+					enum Level {
+						case low
+						case high
+					}
+
+					typealias RawValue = UInt8
+
+					var rawValue: RawValue
+
+					init() {
+						self.rawValue = 0
+					}
+
+					init(rawValue: RawValue) {
+						self.rawValue = rawValue
+					}
+
+					static let priorityLow: Self =
+						Self(rawValue: 1 << 0)
+
+					static let priorityHigh: Self =
+						Self(rawValue: 1 << 1)
+				}
+
+				extension Labeled: OptionSet {
+				}
+				""",
+			macros: macros,
+			indentationWidth: .spaces(2)
+		)
+	}
 }
 #endif
