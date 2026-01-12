@@ -221,10 +221,19 @@ extension OptionSetGenerator: MemberMacro {
 }
 
 extension DeclModifierSyntax {
+	/// Determines if this modifier is an access level keyword that should be preserved
+	/// in generated `OptionSet` members.
+	///
+	/// Supported access levels: `public`, `open`, `package`, `internal`, `fileprivate`.
+	/// Private access is excluded as generated static members need broader visibility.
 	var isNeededAccessLevelModifier: Bool {
 		switch self.name.tokenKind {
-		case .keyword(.public): true
-		default: 				false
+		case .keyword(.public),
+			 .keyword(.fileprivate),
+			 .keyword(.package),
+			 .keyword(.internal),
+			 .keyword(.open): 		true
+		default: 					false
 		}
 	}
 }

@@ -13,100 +13,65 @@ let package = Package(
 	products: [
 		.library(
 			name: "QizhMacroKit",
-			// type: .static,
 			targets: ["QizhMacroKit"]
+		),
+		.library(
+			name: "QizhMacroKitPreviewSupport",
+			targets: ["QizhMacroKitPreviewSupport"]
 		),
 		.executable(
 			name: "QizhMacroKitClient",
 			targets: ["QizhMacroKitClient"]
 		),
-		/*
-		.library(
-			name: "QizhMacroKitPlayground",
-			type: .dynamic,
-			targets: ["QizhMacroKitPlayground"]
-		)
-		*/
 	],
 	dependencies: [
+		/// Tag/version (often better for prebuilts)
 		.package(
 			url: "https://github.com/swiftlang/swift-syntax.git",
-			/// Pinned to match Xcode 26.2 / Swift 6.2 toolchain
-			/// to avoid `_SwiftSyntaxCShims` resolution errors
-			/// ## Changelog
-			/// - `"602.0.0" ..< "700.0.0"`
-			/// - `exact: "602.0.0"`
-			/// - `.upToNextMajor(from: "602.0.0")`
-			/// - `exact: "602.1.0"`
-			/// - `branch: "release/6.2"` (matches Xcode 26.2 / Swift 6.2)
-			from: "602.0.0"
+			.upToNextMajor(from: "602.0.0")
 		),
-		// .package(url: "https://github.com/apple/swift-collections.git", .upToNextMajor(from: "1.2.0")),
-		/*
+		
+		/// DocC plugin (command plugin)
 		.package(
-			url: "https://github.com/apple/swift-testing.git",
-			/// Was `branch: "main"`
-			.upToNextMajor(from: "6.2.0")
+			url: "https://github.com/swiftlang/swift-docc-plugin",
+			from: "1.1.0"
 		),
-		*/
 	],
 	targets: [
-		
-		/// Macro plugin target
-		
+		/// Macro implementation (executable "plugin" for the compiler)
 		.macro(
 			name: "QizhMacroKitMacros",
 			dependencies: [
+				.product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
 				.product(name: "SwiftSyntax", package: "swift-syntax"),
 				.product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
-				.product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
 				.product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
 				.product(name: "SwiftDiagnostics", package: "swift-syntax"),
-				// .product(name: "OrderedCollections", package: "swift-collections"),
 			]
 		),
 		
-		/// Library target that exposes the macro
-		
+		/// Library API (declare `@attached` / `#externalMacro`, etc in it)
 		.target(
 			name: "QizhMacroKit",
 			dependencies: [
-				// .product(name: "OrderedCollections", package: "swift-collections"),
+				"QizhMacroKitMacros",
 			],
 			resources: [
 				.process("PrivacyInfo.xcprivacy")
-			],
-			plugins: [
-				.plugin(name: "QizhMacroKitMacros")
 			]
 		),
-		
-		/// Internal library to test macros with playgrounds
-		
-		/*
-		.target(
-			name: "QizhMacroKitPlayground",
-			dependencies: [
-				"QizhMacroKit",
-			],
-			path: "Sources/Playgrounds",
-			swiftSettings: [
-				.define("ENABLE_DEBUG_DYLIB", .when(configuration: .debug))
-			]
-		),
-		*/
-		
-		/// Client executable target that uses the macro
-		
+
 		.executableTarget(
 			name: "QizhMacroKitClient",
-			dependencies: ["QizhMacroKit"],
-			resources: [
-				.process("PrivacyInfo.xcprivacy")
-			]
+			dependencies: ["QizhMacroKit", "QizhMacroKitPreviewSupport"],
+			resources: [.process("PrivacyInfo.xcprivacy"),]
 		),
 		
-		/// Test target
+		/// Preview support library target for Xcode canvas
+		.target(
+			name: "QizhMacroKitPreviewSupport",
+			dependencies: ["QizhMacroKit"]
+		),
 		
 		.testTarget(
 			name: "QizhMacroKitTests",
@@ -114,14 +79,9 @@ let package = Package(
 				"QizhMacroKit",
 				"QizhMacroKitMacros",
 				.product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
-				// .product(name: "Testing", package: "swift-testing"),
 			],
 			path: "Tests"
 		),
 	],
-	swiftLanguageModes: [
-		// .v5,
-		.v6,
-	]
+	swiftLanguageModes: [.v6]
 )
-
