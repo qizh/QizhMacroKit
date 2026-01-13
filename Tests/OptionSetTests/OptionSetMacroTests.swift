@@ -480,7 +480,7 @@ struct OptionSetMacroTests {
 					}
 
 					static let enabled: Self =
-						Self(rawValue: 1 << Options.enabled.rawValue)
+						Self(rawValue: 1 << 0)
 
 					static let themeLight: Self =
 						Self(rawValue: 1 << 1)
@@ -489,7 +489,7 @@ struct OptionSetMacroTests {
 						Self(rawValue: 1 << 2)
 
 					static let debug: Self =
-						Self(rawValue: 1 << Options.debug.rawValue)
+						Self(rawValue: 1 << 3)
 				}
 
 				extension Settings: OptionSet {
@@ -728,6 +728,113 @@ struct OptionSetMacroTests {
 				}
 
 				extension Labeled: OptionSet {
+				}
+				""",
+			macros: macros,
+			indentationWidth: .spaces(2)
+		)
+	}
+	
+	/// Tests that property name collisions are resolved with numeric suffixes.
+	@Test("Resolves property name collisions with numeric suffixes")
+	func testPropertyNameCollisionResolution() {
+		assertMacroExpansion(
+			"""
+			@OptionSet<UInt8>
+			struct CollisionTest {
+				private enum Options {
+					case item(ItemType)
+					case itemA
+				}
+				
+				enum ItemType {
+					case a
+					case b
+				}
+			}
+			""",
+			expandedSource: """
+				struct CollisionTest {
+					private enum Options {
+						case item(ItemType)
+						case itemA
+					}
+					
+					enum ItemType {
+						case a
+						case b
+					}
+
+					typealias RawValue = UInt8
+
+					var rawValue: RawValue
+
+					init() {
+						self.rawValue = 0
+					}
+
+					init(rawValue: RawValue) {
+						self.rawValue = rawValue
+					}
+
+					static let itemA: Self =
+						Self(rawValue: 1 << 0)
+
+					static let itemB: Self =
+						Self(rawValue: 1 << 1)
+
+					static let itemA1: Self =
+						Self(rawValue: 1 << 2)
+				}
+
+				extension CollisionTest: OptionSet {
+				}
+				""",
+			macros: macros,
+			indentationWidth: .spaces(2)
+		)
+	}
+	
+	/// Tests that various BinaryInteger types work as RawValue.
+	@Test("Supports various BinaryInteger types")
+	func testBinaryIntegerSupport() {
+		assertMacroExpansion(
+			"""
+			@OptionSet<UInt>
+			struct LargeOptions {
+				private enum Options: Int {
+					case flag1
+					case flag2
+				}
+			}
+			""",
+			expandedSource: """
+				struct LargeOptions {
+					private enum Options: Int {
+						case flag1
+						case flag2
+					}
+
+					typealias RawValue = UInt
+
+					var rawValue: RawValue
+
+					init() {
+						self.rawValue = 0
+					}
+
+					init(rawValue: RawValue) {
+						self.rawValue = rawValue
+					}
+
+					static let flag1: Self =
+						Self(rawValue: 1 << Options.flag1.rawValue)
+
+					static let flag2: Self =
+						Self(rawValue: 1 << Options.flag2.rawValue)
+				}
+
+				extension LargeOptions: OptionSet {
 				}
 				""",
 			macros: macros,

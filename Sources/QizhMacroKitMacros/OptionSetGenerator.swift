@@ -216,10 +216,16 @@ extension OptionSetGenerator: MemberMacro {
 		
 		/// Collect all nested enums in the struct for associated value resolution.
 		let nestedEnums = collectNestedEnums(from: structDecl)
+		
+		/// CRITICAL: Check if ANY case has associated values.
+		/// Swift prohibits raw types on enums with associated values.
+		/// If any case has associated values, we MUST use manual bit indexing for ALL cases.
+		let hasAnyAssociatedValues = caseElements.contains { $0.parameterClause != nil }
 
 		/// Generate static properties for each case element.
 		var staticVars: [DeclSyntax] = []
 		var bitIndex = 0
+		var usedPropertyNames: Set<String> = []
 		
 		for element in caseElements {
 			let generatedProperties = generateStaticProperties(
@@ -228,6 +234,8 @@ extension OptionSetGenerator: MemberMacro {
 				nestedEnums: nestedEnums,
 				access: access,
 				bitIndex: &bitIndex,
+				usedPropertyNames: &usedPropertyNames,
+				hasAnyAssociatedValues: hasAnyAssociatedValues,
 				context: context
 			)
 			staticVars.append(contentsOf: generatedProperties)
@@ -281,12 +289,20 @@ extension OptionSetGenerator: MemberMacro {
 	/// For cases with associated enum values, generates a static property for each
 	/// case of the associated enum type.
 	///
+	/// **Critical Implementation Note:**
+	/// Swift prohibits raw types on enums with associated values. If ANY case in the
+	/// Options enum has associated values, we MUST use manual bit indexing (`1 << index`)
+	/// for ALL cases, including simple ones. The `hasAnyAssociatedValues` parameter
+	/// controls this behavior.
+	///
 	/// - Parameters:
 	///   - element: The enum case element to process.
 	///   - optionsEnum: The Options enum declaration.
 	///   - nestedEnums: Dictionary of nested enums and their cases.
 	///   - access: The access modifier to apply.
 	///   - bitIndex: Current bit index, incremented for each generated property.
+	///   - usedPropertyNames: Set of already-used property names for collision detection.
+	///   - hasAnyAssociatedValues: If true, use manual bit indexing for ALL cases.
 	///   - context: Macro expansion context for diagnostics.
 	/// - Returns: Array of generated static property declarations.
 	private static func generateStaticProperties(
@@ -295,16 +311,33 @@ extension OptionSetGenerator: MemberMacro {
 		nestedEnums: [String: [EnumCaseElementSyntax]],
 		access: DeclModifierSyntax?,
 		bitIndex: inout Int,
+		usedPropertyNames: inout Set<String>,
+		hasAnyAssociatedValues: Bool,
 		context: some MacroExpansionContext
 	) -> [DeclSyntax] {
 		/// Check if this case has associated values.
 		guard let parameterClause = element.parameterClause,
 			  let firstParam = parameterClause.parameters.first else {
-			/// Simple case without associated values - use original behavior.
-			let decl: DeclSyntax = """
-				\(access) static let \(element.name): Self =
-					Self(rawValue: 1 << \(optionsEnum.name).\(element.name).rawValue)
-				"""
+			/// Simple case without associated values.
+			let propertyName = resolvePropertyName(
+				baseName: element.name.text,
+				usedNames: &usedPropertyNames
+			)
+			
+			let decl: DeclSyntax
+			if hasAnyAssociatedValues {
+				/// Mixed enum: use manual bit indexing since Options enum can't have raw type.
+				decl = """
+					\(access)static let \(raw: propertyName): Self =
+						Self(rawValue: 1 << \(raw: bitIndex))
+					"""
+			} else {
+				/// Pure simple enum: can use rawValue from Options enum.
+				decl = """
+					\(access)static let \(element.name): Self =
+						Self(rawValue: 1 << \(optionsEnum.name).\(element.name).rawValue)
+					"""
+			}
 			bitIndex += 1
 			return [decl]
 		}
@@ -316,8 +349,12 @@ extension OptionSetGenerator: MemberMacro {
 		guard let enumCases = nestedEnums[typeName] else {
 			/// Not a nested enum - fall back to simple case generation.
 			/// This handles external types or non-enum associated values.
+			let propertyName = resolvePropertyName(
+				baseName: element.name.text,
+				usedNames: &usedPropertyNames
+			)
 			let decl: DeclSyntax = """
-				\(access) static let \(element.name): Self =
+				\(access)static let \(raw: propertyName): Self =
 					Self(rawValue: 1 << \(raw: bitIndex))
 				"""
 			bitIndex += 1
@@ -333,8 +370,14 @@ extension OptionSetGenerator: MemberMacro {
 			/// Combine names: "level" + "High" -> "levelHigh"
 			let combinedName = baseName + caseName.capitalizingFirstLetter()
 			
+			/// Resolve collisions using the shared helper.
+			let propertyName = resolvePropertyName(
+				baseName: combinedName,
+				usedNames: &usedPropertyNames
+			)
+			
 			let decl: DeclSyntax = """
-				\(access) static let \(raw: combinedName): Self =
+				\(access)static let \(raw: propertyName): Self =
 					Self(rawValue: 1 << \(raw: bitIndex))
 				"""
 			properties.append(decl)
@@ -342,6 +385,33 @@ extension OptionSetGenerator: MemberMacro {
 		}
 		
 		return properties
+	}
+	
+	/// Resolves property name collisions by appending numeric suffixes.
+	///
+	/// This approach is borrowed from `@CaseValue` macro for consistency
+	/// across the macro kit.
+	///
+	/// - Parameters:
+	///   - baseName: The desired property name.
+	///   - usedNames: Set of already-used names, updated with the resolved name.
+	/// - Returns: A unique property name (possibly with numeric suffix).
+	private static func resolvePropertyName(
+		baseName: String,
+		usedNames: inout Set<String>
+	) -> String {
+		var propertyName = baseName
+		
+		if usedNames.contains(propertyName) {
+			var number: UInt = 0
+			repeat {
+				number += 1
+			} while usedNames.contains("\(propertyName)\(number)")
+			propertyName += "\(number)"
+		}
+		
+		usedNames.insert(propertyName)
+		return propertyName
 	}
 }
 
