@@ -29,10 +29,14 @@ extension OptionSetMacroDiagnostic: DiagnosticMessage {
 
 	var message: String {
 		switch self {
-		case .requiresStruct: 					"'OptionSet' macro can only be applied to a struct"
-		case .requiresStringLiteral(let name): 	"'OptionSet' macro argument '\(name)' must be a string literal"
-		case .requiresOptionsEnum(let name): 	"'OptionSet' macro requires nested options enum '\(name)'"
-		case .requiresOptionsEnumRawType: 		"'OptionSet' macro requires a raw type"
+		case .requiresStruct:
+			"'OptionSet' macro can only be applied to a struct"
+		case .requiresStringLiteral(let name):
+			"'OptionSet' macro argument '\(name)' must be a string literal"
+		case .requiresOptionsEnum(let name):
+			"'OptionSet' macro requires nested options enum '\(name)'"
+		case .requiresOptionsEnumRawType:
+			"'OptionSet' macro requires a raw type"
 		}
 	}
 
@@ -182,7 +186,7 @@ extension OptionSetGenerator: MemberMacro {
 		in context: some MacroExpansionContext
 	) throws -> [DeclSyntax] {
 		/// Decode the expansion arguments.
-		guard let (_, optionsEnum, rawType) = decodeExpansion(
+		guard let (structDecl, optionsEnum, rawType) = decodeExpansion(
 			of: attribute,
 			attachedTo: decl,
 			in: context,
@@ -203,12 +207,32 @@ extension OptionSetGenerator: MemberMacro {
 
 		/// Dig out the access control keyword we need.
 		let access = decl.modifiers.first(where: \.isNeededAccessLevelModifier)
+		
+		/// Collect all nested enums in the struct for associated value resolution.
+		let nestedEnums = collectNestedEnums(from: structDecl)
+		
+		/// CRITICAL: Check if ANY case has associated values.
+		/// Swift prohibits raw types on enums with associated values.
+		/// If any case has associated values, we MUST use manual bit indexing for ALL cases.
+		let hasAnyAssociatedValues = caseElements.contains { $0.parameterClause != nil }
 
-		let staticVars = caseElements.map { (element) -> DeclSyntax in
-			"""
-			\(access) static let \(element.name): Self =
-				Self(rawValue: 1 << \(optionsEnum.name).\(element.name).rawValue)
-			"""
+		/// Generate static properties for each case element.
+		var staticVars: [DeclSyntax] = []
+		var bitIndex = 0
+		var usedPropertyNames: Set<String> = []
+		
+		for element in caseElements {
+			let generatedProperties = generateStaticProperties(
+				for: element,
+				in: optionsEnum,
+				nestedEnums: nestedEnums,
+				access: access,
+				bitIndex: &bitIndex,
+				usedPropertyNames: &usedPropertyNames,
+				hasAnyAssociatedValues: hasAnyAssociatedValues,
+				context: context
+			)
+			staticVars.append(contentsOf: generatedProperties)
 		}
 
 		return [
@@ -218,13 +242,187 @@ extension OptionSetGenerator: MemberMacro {
 			"\(access)init(rawValue: RawValue) { self.rawValue = rawValue }",
 		] + staticVars
 	}
+	
+	// MARK: - Associated Enum Value Support
+	
+	/// Collects all nested enum declarations from a struct.
+	///
+	/// Used to resolve associated value types that reference nested enums.
+	/// Only enums with case declarations are included.
+	///
+	/// - Parameter structDecl: The struct declaration to search.
+	/// - Returns: Dictionary mapping enum names to their case elements.
+	private static func collectNestedEnums(
+		from structDecl: StructDeclSyntax
+	) -> [String: [EnumCaseElementSyntax]] {
+		var result: [String: [EnumCaseElementSyntax]] = [:]
+		
+		for member in structDecl.memberBlock.members {
+			guard let enumDecl = member.decl.as(EnumDeclSyntax.self) else {
+				continue
+			}
+			
+			let cases = enumDecl.memberBlock.members.flatMap { member in
+				guard let caseDecl = member.decl.as(EnumCaseDeclSyntax.self) else {
+					return [EnumCaseElementSyntax]()
+				}
+				return Array(caseDecl.elements)
+			}
+			
+			if !cases.isEmpty {
+				result[enumDecl.name.text] = cases
+			}
+		}
+		
+		return result
+	}
+	
+	/// Generates static properties for an Options enum case element.
+	///
+	/// For simple cases (no associated values), generates a single static property.
+	/// For cases with associated enum values, generates a static property for each
+	/// case of the associated enum type.
+	///
+	/// **Critical Implementation Note:**
+	/// Swift prohibits raw types on enums with associated values. If ANY case in the
+	/// Options enum has associated values, we MUST use manual bit indexing (`1 << index`)
+	/// for ALL cases, including simple ones. The `hasAnyAssociatedValues` parameter
+	/// controls this behavior.
+	///
+	/// - Parameters:
+	///   - element: The enum case element to process.
+	///   - optionsEnum: The Options enum declaration.
+	///   - nestedEnums: Dictionary of nested enums and their cases.
+	///   - access: The access modifier to apply.
+	///   - bitIndex: Current bit index, incremented for each generated property.
+	///   - usedPropertyNames: Set of already-used property names for collision detection.
+	///   - hasAnyAssociatedValues: If true, use manual bit indexing for ALL cases.
+	///   - context: Macro expansion context for diagnostics.
+	/// - Returns: Array of generated static property declarations.
+	private static func generateStaticProperties(
+		for element: EnumCaseElementSyntax,
+		in optionsEnum: EnumDeclSyntax,
+		nestedEnums: [String: [EnumCaseElementSyntax]],
+		access: DeclModifierSyntax?,
+		bitIndex: inout Int,
+		usedPropertyNames: inout Set<String>,
+		hasAnyAssociatedValues: Bool,
+		context: some MacroExpansionContext
+	) -> [DeclSyntax] {
+		/// Check if this case has associated values.
+		guard let parameterClause = element.parameterClause,
+			  let firstParam = parameterClause.parameters.first else {
+			/// Simple case without associated values.
+			let propertyName = resolvePropertyName(
+				baseName: element.name.text,
+				usedNames: &usedPropertyNames
+			)
+			
+			let decl: DeclSyntax
+			if hasAnyAssociatedValues {
+				/// Mixed enum: use manual bit indexing since Options enum can't have raw type.
+				decl = """
+					\(access)static let \(raw: propertyName): Self =
+						Self(rawValue: 1 << \(raw: bitIndex))
+					"""
+			} else {
+				/// Pure simple enum: can use rawValue from Options enum.
+				decl = """
+					\(access)static let \(element.name): Self =
+						Self(rawValue: 1 << \(optionsEnum.name).\(element.name).rawValue)
+					"""
+			}
+			bitIndex += 1
+			return [decl]
+		}
+		
+		/// Extract the type name from the parameter.
+		let typeName = firstParam.type.trimmedDescription
+		
+		/// Look up the type in nested enums.
+		guard let enumCases = nestedEnums[typeName] else {
+			/// Not a nested enum - fall back to simple case generation.
+			/// This handles external types or non-enum associated values.
+			let propertyName = resolvePropertyName(
+				baseName: element.name.text,
+				usedNames: &usedPropertyNames
+			)
+			let decl: DeclSyntax = """
+				\(access)static let \(raw: propertyName): Self =
+					Self(rawValue: 1 << \(raw: bitIndex))
+				"""
+			bitIndex += 1
+			return [decl]
+		}
+		
+		/// Generate a static property for each case of the associated enum.
+		var properties: [DeclSyntax] = []
+		let baseName = element.name.text
+		
+		for enumCase in enumCases {
+			let caseName = enumCase.name.text
+			/// Combine names: "level" + "High" -> "levelHigh"
+			let combinedName = baseName + caseName.capitalizingFirstLetter()
+			
+			/// Resolve collisions using the shared helper.
+			let propertyName = resolvePropertyName(
+				baseName: combinedName,
+				usedNames: &usedPropertyNames
+			)
+			
+			let decl: DeclSyntax = """
+				\(access)static let \(raw: propertyName): Self =
+					Self(rawValue: 1 << \(raw: bitIndex))
+				"""
+			properties.append(decl)
+			bitIndex += 1
+		}
+		
+		return properties
+	}
+	
+	/// Resolves property name collisions by appending numeric suffixes.
+	///
+	/// This approach is borrowed from `@CaseValue` macro for consistency
+	/// across the macro kit.
+	///
+	/// - Parameters:
+	///   - baseName: The desired property name.
+	///   - usedNames: Set of already-used names, updated with the resolved name.
+	/// - Returns: A unique property name (possibly with numeric suffix).
+	private static func resolvePropertyName(
+		baseName: String,
+		usedNames: inout Set<String>
+	) -> String {
+		var propertyName = baseName
+		
+		if usedNames.contains(propertyName) {
+			var number: UInt = 0
+			repeat {
+				number += 1
+			} while usedNames.contains("\(propertyName)\(number)")
+			propertyName += "\(number)"
+		}
+		
+		usedNames.insert(propertyName)
+		return propertyName
+	}
 }
 
 extension DeclModifierSyntax {
+	/// Determines if this modifier is an access level keyword that should be preserved
+	/// in generated `OptionSet` members.
+	///
+	/// Supported access levels: `public`, `open`, `package`, `internal`, `fileprivate`.
+	/// Private access is excluded as generated static members need broader visibility.
 	var isNeededAccessLevelModifier: Bool {
 		switch self.name.tokenKind {
-		case .keyword(.public): true
-		default: 				false
+		case .keyword(.public),
+			 .keyword(.fileprivate),
+			 .keyword(.package),
+			 .keyword(.internal),
+			 .keyword(.open): 		true
+		default: 					false
 		}
 	}
 }

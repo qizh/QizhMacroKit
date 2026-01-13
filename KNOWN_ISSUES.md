@@ -1,6 +1,6 @@
 # Known Issues
 
-> Last Updated: December 18, 2025
+> Last Updated: January 13, 2026
 
 This document lists known limitations and issues in QizhMacroKit.
 
@@ -101,6 +101,51 @@ The macro plugin entry point (`_QizhMacroKitMacro.swift`) registers macros with 
 - Appears as 0% coverage in code coverage reports
 
 This is expected behavior for Swift macro plugins. The actual macro implementations (generators) are fully testable and covered.
+
+---
+
+## Resolved Issues
+
+### @OptionSet Mixed Case Bit Collisions (PR #45)
+
+**Status**: Fixed (January 13, 2026)  
+**Affected**: `@OptionSet` macro  
+**Resolution**: Commit `776085c`
+
+When an `Options` enum contained both simple cases and cases with associated values, the generated code would produce bit collisions. Swift prohibits raw types on enums with associated values, so `.rawValue` cannot be used on simple cases when any case has associated values.
+
+**Fix**: The macro now detects if ANY case has associated values and uses manual bit indexing (`1 << index`) for ALL cases in that scenario.
+
+---
+
+### Unused Diagnostic Cases (PR #45)
+
+**Status**: Fixed (January 13, 2026)  
+**Affected**: `OptionSetMacroDiagnostic`  
+**Resolution**: Removed dead code
+
+The diagnostic cases `associatedEnumNotFound` and `associatedEnumMissingCases` were declared but never emitted. Since the silent fallback to simple generation is intentional behavior (for external types), the unused diagnostics were removed.
+
+---
+
+## External Issues
+
+### Codex Code Review GitHub Integration
+
+**Status**: OpenAI Backend Issue  
+**Reported**: January 13, 2026
+
+The Codex Code Review feature may fail to connect to GitHub repositories even when:
+- GitHub App is properly installed
+- Repository is in the authorized list
+- All permissions are granted
+
+**Symptoms**:
+- "Action required: Update your GitHub permissions" banner persists
+- "Update" button doesn't resolve the issue
+- Stale/phantom repositories appear in settings that cannot be removed
+
+**Workaround**: Contact OpenAI support. This is a backend OAuth token validation issue.
 
 ---
 
