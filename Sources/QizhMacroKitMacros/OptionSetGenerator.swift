@@ -20,8 +20,6 @@ enum OptionSetMacroDiagnostic {
 	case requiresStringLiteral(_ name: String)
 	case requiresOptionsEnum(_ name: String)
 	case requiresOptionsEnumRawType
-	case associatedEnumNotFound(_ typeName: String, caseName: String)
-	case associatedEnumMissingCases(_ typeName: String)
 }
 
 extension OptionSetMacroDiagnostic: DiagnosticMessage {
@@ -39,10 +37,6 @@ extension OptionSetMacroDiagnostic: DiagnosticMessage {
 			"'OptionSet' macro requires nested options enum '\(name)'"
 		case .requiresOptionsEnumRawType:
 			"'OptionSet' macro requires a raw type"
-		case .associatedEnumNotFound(let typeName, let caseName):
-			"Associated type '\(typeName)' for case '\(caseName)' must be a nested enum with cases"
-		case .associatedEnumMissingCases(let typeName):
-			"Associated enum '\(typeName)' has no cases to generate options from"
 		}
 	}
 

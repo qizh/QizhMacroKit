@@ -9,3 +9,7 @@ DerivedData/
 DerivedData-filetree.md
 Package.resolved
 .vscode/settings.json
+
+# Task resources folder (temporary files for AI assistants)
+.tasks/*
+!.tasks/.gitkeep
