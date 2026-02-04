@@ -72,8 +72,7 @@ extension LabeledExprListSyntax {
 
 /// ✨ Line 69: Nice. ✨
 
-/// `@OptionSet` macro generator
-public struct OptionSetGenerator {
+public struct OptionSetGenerator: MemberMacro, ExtensionMacro {
 	/// Decodes the arguments to the macro expansion.
 	/// - Returns: the important arguments used by the various roles of this
 	///   macro inhabits, or nil if an error occurred.
@@ -148,7 +147,7 @@ public struct OptionSetGenerator {
 	}
 }
 
-extension OptionSetGenerator: ExtensionMacro {
+extension OptionSetGenerator {
 	public static func expansion(
 		of node: AttributeSyntax,
 		attachedTo declaration: some DeclGroupSyntax,
@@ -178,7 +177,7 @@ extension OptionSetGenerator: ExtensionMacro {
 	}
 }
 
-extension OptionSetGenerator: MemberMacro {
+extension OptionSetGenerator {
 	public static func expansion(
 		of attribute: AttributeSyntax,
 		providingMembersOf decl: some DeclGroupSyntax,
