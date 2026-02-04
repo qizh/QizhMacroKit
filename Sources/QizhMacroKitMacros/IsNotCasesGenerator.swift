@@ -9,6 +9,40 @@ import SwiftSyntax
 import SwiftSyntaxMacros
 import SwiftDiagnostics
 
+/// Macro implementation for `@IsNotCase`.
+///
+/// Generates negated boolean computed properties for each enum case.
+/// These properties return `true` when the value does NOT match the case.
+///
+/// ## Generated Properties
+///
+/// For each case, generates:
+/// - `isNot<CaseName>: Bool` - Returns `true` if the value does NOT match this case
+///
+/// ## Example
+///
+/// ```swift
+/// @IsNotCase
+/// enum Permission {
+///     case granted
+///     case denied
+///     case notDetermined
+/// }
+///
+/// let permission = Permission.notDetermined
+/// if permission.isNotGranted {
+///     requestPermission()
+/// }
+/// ```
+///
+/// ## Implementation Details
+///
+/// - Validates the declaration is an enum
+/// - Generates properties with proper access control
+/// - Handles cases with and without associated values
+/// - Property names follow `isNot<CaseName>` convention
+///
+/// - SeeAlso: `@IsCase` for positive case checking
 public struct IsNotCasesGenerator: MemberMacro {
 	public static func expansion(
 		of node: AttributeSyntax,

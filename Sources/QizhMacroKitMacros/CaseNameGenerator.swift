@@ -9,6 +9,34 @@ import SwiftSyntax
 import SwiftSyntaxMacros
 import SwiftDiagnostics
 
+/// Macro implementation for `@CaseName`.
+///
+/// Generates a computed `caseName` property that returns the enum case name as a `String`.
+/// The macro validates that it is applied only to enums with at least one case.
+///
+/// ## Example
+///
+/// ```swift
+/// @CaseName
+/// enum Status {
+///     case idle
+///     case loading
+///     case success(Data)
+/// }
+///
+/// let status = Status.loading
+/// print(status.caseName) // "loading"
+/// ```
+///
+/// ## Implementation Details
+///
+/// - Validates the declaration is an enum
+/// - Ensures the enum has at least one case
+/// - Generates a switch statement covering all cases
+/// - Respects access control modifiers from the enum declaration
+/// - Handles cases with associated values
+///
+/// - SeeAlso: `@CaseValue` for extracting associated values
 public struct CaseNameGenerator: MemberMacro {
 	public static func expansion(
 		of node: AttributeSyntax,

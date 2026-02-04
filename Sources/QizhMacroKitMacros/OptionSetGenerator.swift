@@ -72,6 +72,48 @@ extension LabeledExprListSyntax {
 
 /// ✨ Line 69: Nice. ✨
 
+/// Macro implementation for `@OptionSet`.
+///
+/// Generates an `OptionSet`-conforming type from a struct containing a nested `Options` enum.
+/// The macro automatically creates the required properties, initializers, and static members.
+///
+/// ## Generated Members
+///
+/// - `rawValue: RawType` - The underlying raw value storage
+/// - `init(rawValue:)` - Required initializer for `OptionSet` conformance
+/// - Static properties for each enum case (e.g., `.option1`, `.option2`)
+/// - Extension conforming to `OptionSet` protocol
+///
+/// ## Example
+///
+/// ```swift
+/// @OptionSet<UInt8>
+/// struct ShippingOptions {
+///     enum Options {
+///         case nextDay
+///         case priority
+///         case standard
+///     }
+/// }
+///
+/// let options: ShippingOptions = [.nextDay, .priority]
+/// ```
+///
+/// ## Implementation Details
+///
+/// - Supports any `BinaryInteger` raw type
+/// - Handles simple enum cases and cases with associated values
+/// - For enums with associated values, uses manual bit indexing
+/// - Respects access control modifiers
+/// - Validates struct has nested `Options` enum
+///
+/// ## Protocol Conformances
+///
+/// This generator implements both `MemberMacro` and `ExtensionMacro`:
+/// - `MemberMacro`: Generates the required members inside the struct
+/// - `ExtensionMacro`: Adds `OptionSet` conformance via extension
+///
+/// - Note: The macro validates input and emits clear diagnostics for incorrect usage.
 public struct OptionSetGenerator: MemberMacro, ExtensionMacro {
 	/// Decodes the arguments to the macro expansion.
 	/// - Returns: the important arguments used by the various roles of this
