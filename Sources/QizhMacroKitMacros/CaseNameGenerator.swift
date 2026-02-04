@@ -5,6 +5,10 @@
 //  Created by Serhii Shevchenko on 08.10.2024.
 //
 
+import SwiftSyntax
+import SwiftSyntaxMacros
+import SwiftDiagnostics
+
 public struct CaseNameGenerator: MemberMacro {
 	public static func expansion(
 		of node: AttributeSyntax,

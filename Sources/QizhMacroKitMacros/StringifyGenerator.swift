@@ -2,14 +2,14 @@
 //  StringifyGenerator.swift
 //  QizhMacroKit
 //
-//  Created by Serhii Shevchenko on 08.10.2024.
+//  Created by Serhii Shevchenko on 09.10.2024.
 //
 
 import SwiftSyntax
-import SwiftSyntaxBuilder
+import SwiftSyntaxMacros
 import SwiftDiagnostics
 
-// MARK: Stringify
+// MARK: Helpers
 
 public struct StringifyGenerator: ExpressionMacro {
 	public static func expansion(

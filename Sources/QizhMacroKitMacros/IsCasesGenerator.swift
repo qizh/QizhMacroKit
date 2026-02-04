@@ -6,8 +6,8 @@
 //
 
 import SwiftSyntax
-import SwiftDiagnostics
 import SwiftSyntaxMacros
+import SwiftDiagnostics
 import SwiftSyntaxBuilder
 
 public struct IsCasesGenerator: MemberMacro {

@@ -1,8 +1,8 @@
-@_exported import SwiftCompilerPlugin
-@_exported import SwiftSyntaxMacros
-@_exported import SwiftSyntax
-@_exported import SwiftSyntaxBuilder
-@_exported import SwiftDiagnostics
+import SwiftCompilerPlugin
+import SwiftSyntaxMacros
+import SwiftSyntax
+import SwiftSyntaxBuilder
+import SwiftDiagnostics
 
 @main
 struct QizhMacroKitPlugin: CompilerPlugin {
