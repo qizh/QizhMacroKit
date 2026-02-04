@@ -106,6 +106,24 @@ This is expected behavior for Swift macro plugins. The actual macro implementati
 
 ## Resolved Issues
 
+### @_exported Imports in Macro Target (PR #46)
+
+**Status**: Fixed (February 6, 2025)  
+**Affected**: All macros when used as dependency in Xcode 26.3 RC  
+**Resolution**: Removed `@_exported` from macro implementation imports
+
+Macro implementation files incorrectly used `@_exported` to re-export SwiftSyntax modules (SwiftCompilerPlugin, SwiftSyntax, SwiftSyntaxMacros, etc.). This caused consuming projects to fail with:
+
+```
+error: No such module 'SwiftCompilerPlugin'
+```
+
+**Root Cause**: `.macro` targets are compiler plugins that execute at build time, not library code. Their dependencies are internal implementation details and should never leak to consuming projects via `@_exported`.
+
+**Fix**: Removed `@_exported` from all macro implementation imports and added proper `import` statements to each generator file as needed.
+
+---
+
 ### @OptionSet Mixed Case Bit Collisions (PR #45)
 
 **Status**: Fixed (January 13, 2026)  
