@@ -1,7 +1,8 @@
-// swift-tools-version: 6.3
+// swift-tools-version: 6.2
 
-/// Package manifest for Swift 6.3+ toolchain
-/// See Package@swift-6.2.swift for Swift 6.2 toolchain (Xcode 26.2)
+/// Package manifest for Swift 6.2 toolchain (Xcode 26.2 and earlier)
+/// Note: Swift 6.2.4+ (Xcode 26.3 RC) may have incompatible prebuilt modules
+/// See Package.swift for Swift 6.3+ toolchain
 
 import PackageDescription
 import CompilerPluginSupport
@@ -28,11 +29,10 @@ let package = Package(
 		),
 	],
 	dependencies: [
-		/// swift-syntax 603.x for Xcode 26.3+ compatibility
-		/// Note: 602.0.0 prebuilts are incompatible with Swift 6.2.4+ (Xcode 26.3 RC)
+		/// swift-syntax 602.x for Swift 6.2 toolchain
 		.package(
 			url: "https://github.com/swiftlang/swift-syntax.git",
-			from: "603.0.0-prerelease-2025-12-17"
+			from: "602.0.0"
 		),
 		
 		/// DocC plugin (command plugin)
