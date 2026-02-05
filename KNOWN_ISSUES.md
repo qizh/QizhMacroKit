@@ -106,6 +106,34 @@ This is expected behavior for Swift macro plugins. The actual macro implementati
 
 ## Resolved Issues
 
+### Xcode 26.3 RC Compatibility Issues (PRs #48, #49)
+
+**Status**: Fixed (February 5, 2026)  
+**Affected**: All macros when building with Xcode 26.3 RC (Swift 6.2.4)  
+**Resolution**: Combined fix from PRs #48 and #49
+
+#### Problem 1: @_exported Imports Leaking Dependencies
+
+Using `@_exported` in the macro target (`_QizhMacroKitMacro.swift`) caused "No such module 'SwiftCompilerPlugin'" errors in consuming projects when building with Xcode 26.3 RC.
+
+**Root Cause**: `.macro` targets are compiler plugins executing at build time. Their dependencies (SwiftCompilerPlugin, SwiftSyntax, SwiftSyntaxMacros, etc.) are internal implementation details and should never be re-exported via `@_exported` to consuming projects.
+
+**Fix**: Removed `@_exported` from all imports in `_QizhMacroKitMacro.swift` and added proper import statements to generator files.
+
+#### Problem 2: swift-syntax Prebuilt Module Incompatibility
+
+swift-syntax 602.0.0 prebuilt modules were compiled with an older Swift 6.2.x compiler. Swift 6.2.4 (Xcode 26.3 RC) cannot use these prebuilts, causing "Module file is incompatible with this Swift compiler" errors.
+
+**Fix**: Created version-specific `Package.swift` manifests:
+
+- `Package.swift` (swift-tools-version: 6.3) → swift-syntax 603.x for Swift 6.3+
+- `Package@swift-6.2.4.swift` → swift-syntax 603.x for Swift 6.2.4 (Xcode 26.3 RC)
+- `Package@swift-6.2.swift` → swift-syntax 602.x for Swift 6.2.0-6.2.3 (Xcode 26.2)
+
+SwiftPM automatically selects the appropriate manifest based on the toolchain version.
+
+---
+
 ### @OptionSet Mixed Case Bit Collisions (PR #45)
 
 **Status**: Fixed (January 13, 2026)  

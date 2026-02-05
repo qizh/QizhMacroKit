@@ -10,6 +10,47 @@ import SwiftDiagnostics
 import SwiftSyntaxMacros
 import SwiftSyntaxBuilder
 
+/// Macro implementation for `@IsCase`.
+///
+/// Generates boolean computed properties for each enum case to check membership,
+/// plus an `isAmong(_:)` method for checking against multiple cases.
+///
+/// ## Generated Properties
+///
+/// For each case, generates:
+/// - `is<CaseName>: Bool` - Returns `true` if the value matches this case
+///
+/// Also generates:
+/// - `isAmong(_: Self...) -> Bool` - Returns `true` if the value matches any provided case
+///
+/// ## Example
+///
+/// ```swift
+/// @IsCase
+/// enum NetworkState {
+///     case disconnected
+///     case connecting
+///     case connected(session: Session)
+/// }
+///
+/// let state = NetworkState.connecting
+/// if state.isConnecting {
+///     showLoadingIndicator()
+/// }
+///
+/// if state.isAmong(.disconnected, .connecting) {
+///     retryConnection()
+/// }
+/// ```
+///
+/// ## Implementation Details
+///
+/// - Validates the declaration is an enum
+/// - Generates properties with proper access control
+/// - Handles cases with and without associated values
+/// - Property names follow camelCase convention
+///
+/// - SeeAlso: `@IsNotCase` for negated case checking
 public struct IsCasesGenerator: MemberMacro {
 	public static func expansion(
 		of node: AttributeSyntax,
