@@ -158,6 +158,69 @@ The diagnostic cases `associatedEnumNotFound` and `associatedEnumMissingCases` w
 
 ## External Issues
 
+### Xcode "No such module 'SwiftCompilerPlugin'" Error
+
+**Status**: Xcode Bug  
+**Affected**: Projects depending on QizhMacroKit when building for iOS  
+**Reported**: January 14, 2026  
+**Xcode Versions**: 26.x RC (and earlier versions)
+
+When building a project that depends on QizhMacroKit for an iOS destination, Xcode may incorrectly attempt to compile the macro target (`QizhMacroKitMacros`) for the destination platform instead of the host platform (macOS).
+
+**Symptoms**:
+
+- `No such module 'SwiftCompilerPlugin'` error in `_QizhMacroKitMacro.swift`
+- Error only appears when building for iOS/tvOS/watchOS destinations
+- `swift build` from terminal works correctly
+
+**Root Cause**: Xcode uses prebuilt swift-syntax modules that may be compiled with a different Swift compiler version than the one bundled with your Xcode. When there's a version mismatch, the modules become incompatible, causing cascading import failures for `SwiftSyntax`, `SwiftDiagnostics`, `SwiftSyntaxMacros`, `SwiftSyntaxBuilder`, and `SwiftCompilerPlugin`.
+
+**Build Log Indicators**:
+
+```text
+warning: Module file '...SwiftSyntax.swiftmodule...' is incompatible with this Swift compiler: compiled with a different version of the compiler
+```
+
+**Workarounds** (in order of effectiveness):
+
+1. **Reset Package Caches**:
+   - `File → Packages → Reset Package Caches`
+   - Clean build folder: `Cmd+Shift+K`
+
+2. **Delete DerivedData**:
+
+   ```zsh
+   rm -rf ~/Library/Developer/Xcode/DerivedData
+   ```
+
+3. **Trust Macros**: Check the Issue Navigator for "Trust & Enable" prompts
+
+4. **Restart Xcode** after resetting caches
+
+5. **Build for Mac first**, then switch to iOS destination
+
+#### If "Trust & Enable" Prompt Doesn't Appear
+
+If the standard workarounds don't help and the macro trust prompt never appears:
+
+1. **Force trust all macros** (temporary, has security implications):
+
+   ```zsh
+   defaults write com.apple.dt.Xcode IDESkipMacroFingerprintValidation -bool YES
+   ```
+
+   Then restart Xcode. To revert:
+
+   ```zsh
+   defaults delete com.apple.dt.Xcode IDESkipMacroFingerprintValidation
+   ```
+
+2. **Clean and rebuild** with trusted macros
+
+3. **Check Xcode Console** (`Cmd+Shift+2`) for additional error details
+
+---
+
 ### Codex Code Review GitHub Integration
 
 **Status**: OpenAI Backend Issue  
