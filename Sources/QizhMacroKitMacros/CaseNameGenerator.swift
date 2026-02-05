@@ -11,8 +11,8 @@ import SwiftDiagnostics
 
 /// Macro implementation for `@CaseName`.
 ///
-/// Generates a computed `caseName` property that returns the enum case name as a `String`.
-/// The macro validates that it is applied only to enums with at least one case.
+/// Generates a `caseName` computed property that returns the name of the current enum case as a `String`.
+/// This is useful for debugging, logging, or serialization where you need the case name without associated values.
 ///
 /// ## Example
 ///
@@ -21,7 +21,8 @@ import SwiftDiagnostics
 /// enum Status {
 ///     case idle
 ///     case loading
-///     case success(Data)
+///     case success(data: Data)
+///     case failure(error: Error)
 /// }
 ///
 /// let status = Status.loading
