@@ -1,6 +1,6 @@
 # Known Issues
 
-> Last Updated: January 13, 2026
+> Last Updated: February 5, 2026
 
 This document lists known limitations and issues in QizhMacroKit.
 
