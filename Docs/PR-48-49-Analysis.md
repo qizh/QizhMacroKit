@@ -89,4 +89,4 @@ This branch (`feature/toolchain/603-prerelease/combined-by-cascade`) merges both
 
 ---
 
-*Analyzed and combined by `Cascade`*
+*Analyzed and combined by `Batman`*
